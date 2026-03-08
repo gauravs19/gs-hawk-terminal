@@ -131,12 +131,39 @@ class DisplayEngine:
         )
         return Group(Rule(style=DisplayEngine.TEXT_HL), footer, Text(" " + "═" * (console.width - 2), style=DisplayEngine.TEXT_HL))
 
+    @staticmethod
+    def get_sector_pulse(sector_summary: dict):
+        if not sector_summary or not sector_summary.get('all'):
+            return Panel(Text("FETCHING SECTOR STRENGTH...", style="dim"), border_style=DisplayEngine.TEXT_HL)
+
+        leaders = sector_summary.get('leaders', [])
+        laggards = sector_summary.get('laggards', [])
+
+        pulse_table = Table.grid(expand=True)
+        pulse_table.add_column(ratio=1); pulse_table.add_column(ratio=1)
+
+        leader_texts = []
+        for name, data in leaders:
+            leader_texts.append(f"{name} [{DisplayEngine.PRICE_UP}]+{data['change_1d']:.1f}%[/]")
+        
+        laggard_texts = []
+        for name, data in laggards:
+            laggard_texts.append(f"{name} [{DisplayEngine.PRICE_RED}]{data['change_1d']:.1f}%[/]")
+
+        pulse_table.add_row(
+            Text.assemble((" LEADING SECTORS: ", "dim"), "  ".join(leader_texts)),
+            Text.assemble((" LAGGING SECTORS: ", "dim"), "  ".join(laggard_texts), justify="right")
+        )
+
+        return Panel(pulse_table, border_style=DisplayEngine.TEXT_HL, padding=(0, 1))
+
     @classmethod
-    def make_renderable(cls, macro_summary=None, screener_hits=None, results=None, scan_info=None):
+    def make_renderable(cls, macro_summary=None, sector_summary=None, screener_hits=None, results=None, scan_info=None):
         """Assembles components. Designed for vertical scrollability in non-screen mode."""
         return Group(
             cls.get_header(),
             cls.get_macro_dashboard(macro_summary),
+            cls.get_sector_pulse(sector_summary),
             cls.get_screener_grid(screener_hits or {}),
             cls.get_strategy_table(results or []),
             cls.get_footer(scan_info or {})

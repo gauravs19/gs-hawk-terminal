@@ -10,6 +10,7 @@ from core.screeners import ScreenerEngine
 from core.strategies import StrategyEngine
 from core.scoring import ScoringEngine
 from core.macro import MacroEngine
+from core.sectors import SectorEngine
 from core.display import DisplayEngine
 from core.alerts import AlertDispatcher
 
@@ -28,14 +29,19 @@ def scan_cycle(config, args, live):
     ste = StrategyEngine("config/strategies.yaml")
     sc = ScoringEngine()
     me = MacroEngine()
+    sce = SectorEngine()
     ad = AlertDispatcher(config)
 
     scan_info["task"] = "FETCHING MACRO"
     live.update(DisplayEngine.make_renderable(scan_info=scan_info))
     macro_summary = me.get_summary()
+
+    scan_info["task"] = "FETCHING SECTORS"
+    live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, scan_info=scan_info))
+    sector_summary = sce.get_summary()
     
     scan_info["task"] = "LOADING UNIVERSE"
-    live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, scan_info=scan_info))
+    live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, sector_summary=sector_summary, scan_info=scan_info))
     with open("config/universe.yaml", "r", encoding="utf-8") as f:
         universe = yaml.safe_load(f)
 
@@ -48,7 +54,7 @@ def scan_cycle(config, args, live):
         scan_info["task"] = f"SCANNING {i+1}/{len(stocks_to_scan)}: {sym}"
         # Update UI less frequently to prevent flickering
         if i % 10 == 0 or i == len(stocks_to_scan) - 1:
-            live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, screener_hits=screener_hits, results=results, scan_info=scan_info))
+            live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, sector_summary=sector_summary, screener_hits=screener_hits, results=results, scan_info=scan_info))
         
         df = dl.get_stock_data(sym)
         if df.empty: continue
@@ -61,7 +67,11 @@ def scan_cycle(config, args, live):
         if args.screen and args.screen not in matches: continue
             
         base_score = sc.calculate_base_score(matches, metrics)
-        f_score = sc.apply_macro_multiplier(base_score, macro_summary['multiplier'])
+        m_score = sc.apply_macro_multiplier(base_score, macro_summary['multiplier'])
+        
+        # Apply sector boost
+        sector_metrics = sce.get_sector_relative_strength(sym)
+        f_score = sc.apply_sector_influence(m_score, sector_metrics)
         
         plans = ste.evaluate(sym, metrics.get('price', 0), matches)
         if not plans:
@@ -76,7 +86,7 @@ def scan_cycle(config, args, live):
 
     scan_info["task"] = "IDLE (WAITING)"
     scan_info["cache_size"] = len(results) * 200
-    live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, screener_hits=screener_hits, results=results, scan_info=scan_info))
+    live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, sector_summary=sector_summary, screener_hits=screener_hits, results=results, scan_info=scan_info))
 
 def main():
     parser = argparse.ArgumentParser(description="GS Hawk Terminal - Pattern Scanner")
