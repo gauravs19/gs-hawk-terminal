@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*$py.class
+cache/
+logs/
+.env
+.vscode/
+pip_out.txt
+pip_out_utf8.txt
+check_cache.py
+docs/SPEC.md

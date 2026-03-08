@@ -1,0 +1,67 @@
+# GS Hawk Terminal Strategies Configuration
+
+- name: RSI Mean Reversion
+  description: Oversold stocks tend to revert to mean
+  triggers:
+    - RSI Oversold <30
+    - RSI Extreme Oversold <20
+  entry: "next_day_high_breakout"       # entry above today's high
+  stop_loss: "atr_multiplier: 1.5"      # below entry - (1.5 × ATR)
+  target_1: "rr_ratio: 1.0"             # 1:1
+  target_2: "rr_ratio: 2.0"             # 2:1
+  validity_sessions: 3
+  min_rr: 1.5
+  best_market: sideways_to_mild_trend
+
+- name: Trend Following Breakout
+  description: Strong trends continue after consolidation breaks
+  triggers:
+    - NR7
+    - BB Squeeze
+    - Inside Bar
+  entry: "breakout_above_last_3d_high"
+  stop_loss: "below_nr7_low"
+  target_1: "previous_swing_high"
+  target_2: "atr_multiplier: 2.0"
+  validity_sessions: 5
+  min_rr: 1.5
+  best_market: trending
+
+- name: Golden Cross Momentum
+  description: MA crossover signals trend change — ride the new trend
+  triggers:
+    - Golden Cross MA25/50
+    - Golden Cross MA50/200
+  entry: "close_of_crossover_day"
+  stop_loss: "below_ma50"
+  target_1: "trailing_ma25"            # trail stop using MA25
+  target_2: "rr_ratio: 3.0"
+  validity_sessions: 15
+  min_rr: 2.0
+  best_market: trending
+
+- name: Volume Surge Breakout
+  description: Institutional buying leaves a volume footprint
+  triggers:
+    - Big Deal 3x+
+    - Massive Volume 5x+
+    - Price Up + Volume Up
+  entry: "close_of_surge_candle"
+  stop_loss: "low_of_surge_candle"
+  target_1: "surge_candle_range_x1.5"
+  target_2: "surge_candle_range_x2.5"
+  validity_sessions: 5
+  min_rr: 1.5
+  best_market: any
+
+- name: Sector Aligned Momentum
+  description: Stocks perform better when sector is also moving
+  triggers:
+    - Any bullish signal
+    - sector_in_top3_today: true
+  entry: "standard_per_primary_signal"
+  stop_loss: "standard_per_primary_signal"
+  score_boost: 1.5
+  validity_sessions: 5
+  min_rr: 1.5
+  best_market: sector_rotation

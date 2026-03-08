@@ -1,0 +1,87 @@
+# GS Hawk Terminal Stock Universe
+
+tier1:
+  - RELIANCE.NS
+  - TCS.NS
+  - HDFCBANK.NS
+  - INFY.NS
+  - ICICIBANK.NS
+  - SBIN.NS
+  - BHARTIARTL.NS
+  - ITC.NS
+  - HINDUNILVR.NS
+  - L&T.NS
+  - BAJFINANCE.NS
+  - KOTAKBANK.NS
+  - AXISBANK.NS
+  - MARUTI.NS
+  - SUNPHARMA.NS
+  - TITAN.NS
+  - ULTRACEMCO.NS
+  - TATASTEEL.NS
+  - ASIANPAINT.NS
+  - TATAMOTORS.NS
+  - NTPC.NS
+  - M&M.NS
+  - POWERGRID.NS
+  - BAJAJFINSV.NS
+  - ONGC.NS
+  - JSWSTEEL.NS
+  - HCLTECH.NS
+  - ADANIENT.NS
+  - ADANIPORTS.NS
+  - GRASIM.NS
+  - WIPRO.NS
+  - TECHM.NS
+  - NESTLEIND.NS
+  - HDFCLIFE.NS
+  - EICHERMOT.NS
+  - BAJAJ-AUTO.NS
+  - DIVISLAB.NS
+  - DRREDDY.NS
+  - INDUSINDBK.NS
+  - BRITANNIA.NS
+  - CIPLA.NS
+  - APOLLOHOSP.NS
+  - COALINDIA.NS
+  - LTIM.NS
+  - TATACONSUM.NS
+  - HINDALCO.NS
+  - UPL.NS
+  - HEROMOTOCO.NS
+  - BPCL.NS
+  - SBILIFE.NS
+
+tier2:
+  # Nifty Next 50 (adding a few examples for now)
+  - PIDILITIND.NS
+  - GODREJCP.NS
+  - TRENT.NS
+  - BEL.NS
+  - HAL.NS
+  - CHOLAFIN.NS
+  - TVSMOTOR.NS
+  - VBL.NS
+  - BANKBARODA.NS
+  - ZOMATO.NS
+
+tier3:
+  # Midcap 150 examples
+  - SUZLON.NS
+  - BHEL.NS
+  - DIXON.NS
+  - OFSS.NS
+  - KPITTECH.NS
+
+tier4:
+  # Smallcap 250 examples
+  - CDSL.NS
+  - BSE.NS
+  - ANGELONE.NS
+  - RAILTEL.NS
+  - IREDA.NS
+
+tier5:
+  # Microcap 250 examples
+  - WONDERLA.NS
+  - MTNL.NS

@@ -1,0 +1,147 @@
+# GS Hawk Terminal Screeners Configuration
+
+- name: "RSI Oversold <30"
+  description: "Potential bounce zone"
+  emoji: "🟢"
+  category: "momentum"
+  conditions:
+    - metric: rsi_14
+      op: "<"
+      value: 30
+  logic: AND
+
+- name: "RSI Extreme Oversold <20"
+  description: "Deep value / capitulation"
+  emoji: "🟢"
+  category: "momentum"
+  conditions:
+    - metric: rsi_14
+      op: "<"
+      value: 20
+  logic: AND
+
+- name: "Golden Cross MA25/50"
+  description: "Short-to-medium trend change"
+  emoji: "✨"
+  category: "moving_averages"
+  conditions:
+    - metric: ma25_crossed_above_ma50
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "Big Deal 3x+"
+  description: "Strong conviction move"
+  emoji: "⚡"
+  category: "volume"
+  conditions:
+    - metric: volume_ratio
+      op: ">="
+      value: 3.0
+  logic: AND
+
+- name: "Massive Volume 5x+"
+  description: "Institutional / news event"
+  emoji: "⚡"
+  category: "volume"
+  conditions:
+    - metric: volume_ratio
+      op: ">="
+      value: 5.0
+  logic: AND
+
+- name: "Near 52W High"
+  description: "Potential breakout within 2%"
+  emoji: "🚀"
+  category: "price_levels"
+  conditions:
+    - metric: near_52w_high
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "Death Cross MA25/50"
+  description: "Short-term trend reversal"
+  emoji: "💀"
+  category: "moving_averages"
+  conditions:
+    - metric: ma25_crossed_below_ma50
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "BB Squeeze"
+  description: "Big move imminent"
+  emoji: "🎯"
+  category: "volatility"
+  conditions:
+    - metric: bb_squeeze
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "MACD Bullish Crossover"
+  description: "MACD crosses above signal line"
+  emoji: "📈"
+  category: "momentum"
+  conditions:
+    - metric: macd_bullish_cross
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "MACD Bearish Crossover"
+  description: "MACD crosses below signal line"
+  emoji: "📉"
+  category: "momentum"
+  conditions:
+    - metric: macd_bearish_cross
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "Inside Bar"
+  description: "Consolidation, breakout watch"
+  emoji: "⏸️"
+  category: "patterns"
+  conditions:
+    - metric: inside_bar
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "NR7"
+  description: "Narrowest range in 7 days, coiling"
+  emoji: "🧲"
+  category: "patterns"
+  conditions:
+    - metric: nr7
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "Hammer at Low"
+  description: "Bullish reversal candle"
+  emoji: "🔨"
+  category: "patterns"
+  conditions:
+    - metric: hammer
+      op: "=="
+      value: true
+    - metric: near_52w_low
+      op: "=="
+      value: true
+  logic: AND
+
+- name: "Trend Following Setup"
+  description: "NR7 + BB Squeeze"
+  emoji: "🔥"
+  category: "combinations"
+  conditions:
+    - metric: nr7
+      op: "=="
+      value: true
+    - metric: bb_squeeze
+      op: "=="
+      value: true
+  logic: AND

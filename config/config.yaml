@@ -1,0 +1,43 @@
+# GS Hawk Terminal Configuration
+
+telegram:
+  enabled: false
+  bot_token: "YOUR_BOT_TOKEN"
+  chat_id: "YOUR_CHAT_ID"
+
+alerts:
+  desktop_notifications: true
+  sound: true
+  sound_file: ""                  # empty = system beep
+  delta_only: true                # only alert new screener entries
+  rr_minimum: 1.5                 # minimum R:R for strategy alerts
+  cooldown_hours: 4               # re-alert cooldown per stock/screener
+
+scan:
+  interval_minutes: 5
+  market_hours_only: true
+  pre_market_scan: true           # run at 8:30 AM with previous day data
+
+universe:
+  tier1_always: true              # Nifty 50 every scan
+  tier2_always: true              # Nifty Next 50 every scan
+  tier3_always: true              # Midcap 150 every scan
+  tier4_always: true              # Smallcap 250 every scan
+  tier5_post_market_only: true    # Microcap 250 post-market only
+  custom_stocks: []               # add extra symbols here
+
+screeners:
+  enabled_all: true               # set to false to enable individually
+  min_signals_to_show: 1          # hide screeners with 0 matches
+
+strategies:
+  enabled: true
+  show_in_display: true
+
+cache:
+  db_path: "cache/gs_hawk_cache.sqlite"
+  auto_update: true               # auto-download bhav copy daily
+
+display:
+  default_view: "grid"            # grid / strategy / macro / alerts
+  max_stocks_per_screener: 5      # cap display rows per screener cell
