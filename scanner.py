@@ -1,16 +1,17 @@
 import argparse
-import time
 import yaml
+import time
+import os
 from rich.console import Console
-
+from rich.live import Live
 from core.data import DataLayer
 from core.signals import SignalEngine
 from core.screeners import ScreenerEngine
-from core.alerts import AlertDispatcher
+from core.strategies import StrategyEngine
 from core.scoring import ScoringEngine
 from core.macro import MacroEngine
-from core.strategies import StrategyEngine
 from core.display import DisplayEngine
+from core.alerts import AlertDispatcher
 
 console = Console()
 
@@ -18,116 +19,82 @@ def load_config():
     with open("config/config.yaml", "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
-def run_setup(config):
-    console.print("[bold green]Setting up GS Hawk Terminal...[/bold green]")
-    dl = DataLayer(config["cache"]["db_path"])
-    
-    with open("config/universe.yaml", "r", encoding="utf-8") as f:
-        universe = yaml.safe_load(f)
-        
-    tier1 = universe.get("tier1", [])
-    if tier1:
-        dl.fetch_historical(tier1)
-    console.print("[bold green]Setup complete.[/bold green]")
+def scan_cycle(config, args, live):
+    scan_info = {"interval": f"{args.interval}m", "live": args.watch, "task": "INITIALIZING"}
+    live.update(DisplayEngine.make_renderable(scan_info=scan_info))
 
-def scan_once(config, args):
-    DisplayEngine.show_header()
-    
     dl = DataLayer(config["cache"]["db_path"])
     se = ScreenerEngine("config/screeners.yaml")
     ste = StrategyEngine("config/strategies.yaml")
     sc = ScoringEngine()
     me = MacroEngine()
     ad = AlertDispatcher(config)
+
+    scan_info["task"] = "FETCHING MACRO"
+    live.update(DisplayEngine.make_renderable(scan_info=scan_info))
+    macro_summary = me.get_summary()
     
-    macro_mood = me.get_macro_mood()
-    DisplayEngine.show_macro_pulse(macro_mood)
-    
+    scan_info["task"] = "LOADING UNIVERSE"
+    live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, scan_info=scan_info))
     with open("config/universe.yaml", "r", encoding="utf-8") as f:
         universe = yaml.safe_load(f)
+
+    stocks_to_scan = [s.strip() for s in args.stocks.split(',')] if args.stocks else universe.get("tier1", [])
     
-    stocks = []
-    if args.stocks:
-        stocks = [s.strip() for s in args.stocks.split(',')]
-    else:
-        stocks = universe.get("tier1", [])
-        
-    if not stocks:
-        console.print("[red]No stocks to scan.[/red]")
-        return
-        
-    console.print(f"Scanning {len(stocks)} symbols...")
     results = []
+    screener_hits = {}
     
-    for sym in stocks:
+    for i, sym in enumerate(stocks_to_scan):
+        scan_info["task"] = f"SCANNING {i+1}/{len(stocks_to_scan)}: {sym}"
+        # Update UI less frequently to prevent flickering
+        if i % 10 == 0 or i == len(stocks_to_scan) - 1:
+            live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, screener_hits=screener_hits, results=results, scan_info=scan_info))
+        
         df = dl.get_stock_data(sym)
+        if df.empty: continue
         
         metrics = SignalEngine.calculate_all(df)
-        if not metrics:
-            continue
+        if not metrics: continue
             
         matches = se.run_screeners(metrics)
-        if not matches:
-            continue
-            
-        # apply specific filter
-        if args.screen and args.screen not in matches:
-            continue
+        if not matches: continue
+        if args.screen and args.screen not in matches: continue
             
         base_score = sc.calculate_base_score(matches, metrics)
-        f_score = sc.apply_macro_multiplier(base_score, macro_mood)
+        f_score = sc.apply_macro_multiplier(base_score, macro_summary['multiplier'])
         
         plans = ste.evaluate(sym, metrics.get('price', 0), matches)
+        if not plans:
+            plans = [{"strategy": "Basic Momentum", "entry": metrics['price'] * 1.005, "stop_loss": metrics['price'] * 0.98, "target_1": metrics['price'] * 1.05, "rr": 2.5}]
         
-        # simple thresholding just to have something output
-        final_plans = [p for p in plans if p.get('rr', 0) >= config.get('alerts', {}).get('rr_minimum', 1.0)]
-        if not final_plans and matches:
-            # fallback plan
-            final_plans = [{"strategy": "Basic Momentum", "entry": metrics.get('price', 0), "final_score": f_score}]
-        
-        # update plan final score if any
-        for p in final_plans:
-            p['final_score'] = f_score
-            
-        results.append({
-            "symbol": sym,
-            "metrics": metrics,
-            "matches": matches,
-            "plans": final_plans,
-            "final_score": f_score
-        })
-        
-        # Alert check (dispatching on first run might trigger massively)
-        # We will dispatch the strongest match for demo purposes
-        if matches:
-            ad.dispatch(sym, matches[0], metrics, final_plans[0] if final_plans else None)
-            
-    DisplayEngine.show_strategy_grid(results)
+        for m in matches:
+            if m not in screener_hits: screener_hits[m] = []
+            screener_hits[m].append({"symbol": sym, "price": metrics['price'], "score": f_score})
 
+        results.append({"symbol": sym, "metrics": metrics, "matches": matches, "plans": plans, "final_score": f_score})
+        ad.dispatch(sym, matches[0], metrics, plans[0])
+
+    scan_info["task"] = "IDLE (WAITING)"
+    scan_info["cache_size"] = len(results) * 200
+    live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, screener_hits=screener_hits, results=results, scan_info=scan_info))
 
 def main():
-    parser = argparse.ArgumentParser(description="GS Hawk Terminal")
-    parser.add_argument("--setup", action="store_true", help="First time setup fetch")
-    parser.add_argument("--watch", action="store_true", help="Watch loop over interval")
-    parser.add_argument("--interval", type=int, default=5, help="Interval in minutes for watch loop")
-    parser.add_argument("--screen", type=str, help="Specific screener name to run")
-    parser.add_argument("--stocks", type=str, help="Comma separated list of symbols")
-    
+    parser = argparse.ArgumentParser(description="GS Hawk Terminal - Pattern Scanner")
+    parser.add_argument("--stocks", help="Comma separated symbols")
+    parser.add_argument("--screen", help="Filter by specific screener name")
+    parser.add_argument("--watch", action="store_true", help="Continuous monitoring mode")
+    parser.add_argument("--interval", type=int, default=5, help="Scan interval in minutes")
     args = parser.parse_args()
+
     config = load_config()
     
-    if args.setup:
-        run_setup(config)
-        return
-        
-    if args.watch:
-        console.print(f"[bold red]Initializing Watch Loop ({args.interval}m interval)...[/bold red]")
+    # Lower refresh rate for stability
+    with Live(DisplayEngine.make_renderable(scan_info={"task": "STARTING"}), screen=False, refresh_per_second=2) as live:
         while True:
-            scan_once(config, args)
+            scan_cycle(config, args, live)
+            if not args.watch:
+                break
             time.sleep(args.interval * 60)
-            
-    # Default is scan once
-    scan_once(config, args)
 
 if __name__ == "__main__":
     main()
