@@ -14,7 +14,7 @@ class DisplayEngine:
     TEXT_HL = "grey82"       
     TEXT_DIM = "grey50"      
     
-    # Light Trend Colors (Subtle & High-Quality)
+    # Light Trend Colors
     PRICE_UP = "palegreen1"    
     PRICE_RED = "light_pink1"  
     
@@ -58,11 +58,9 @@ class DisplayEngine:
 
     @staticmethod
     def get_market_intelligence(macro: dict, sectors: dict):
-        # Mood Strength Visual Bar
         score = macro.get('score', 0)
         mood_color = DisplayEngine.PRICE_UP if score > 5 else DisplayEngine.PRICE_RED if score < 3 else "grey70"
         bar_len = min(int(max(0, score)), 8)
-        # Visual Bar Chart for Mood
         mood_bar = f"[{mood_color}]{'■' * bar_len}[/][grey30]{'□' * (8 - bar_len)}[/]"
         
         mood_text = f"MARKET MOOD: [bold {mood_color}]{macro.get('mood', 'N/A')}[/] {mood_bar}"
@@ -93,67 +91,64 @@ class DisplayEngine:
     def get_screener_grid(screener_hits: dict):
         if not screener_hits: return Text("SCANNING UNIVERSE...", style=DisplayEngine.TEXT_DIM)
         
-        # New 2-Column Format: SCREENER | STOCKS (Full list, no trim)
         grid = Table(show_header=True, header_style=f"bold {DisplayEngine.TEXT_HL}", box=SQUARE, border_style="grey23", expand=True)
         grid.add_column("STRATEGIC SCREENER (ALL 50+)", style=f"bold {DisplayEngine.SCORE_COL}", width=35)
         grid.add_column("MATCHING SYMBOLS (FULL MARKET UNIVERSE)", style="white")
         
-        # Show ALL screeners that have hits
         sorted_hits = sorted(screener_hits.items(), key=lambda x: len(x[1]), reverse=True)
         for name, stocks in sorted_hits:
             if not stocks: continue
-            # Full list of stocks, comma separated
             stock_list = ", ".join([s['symbol'].replace(".NS","") for s in stocks])
             grid.add_row(name.upper(), stock_list)
             
         return Panel(grid, title=" LIVE PATTERN DETECTION ", border_style="grey30", box=SQUARE)
 
     @staticmethod
-    def get_strategy_table(results: list):
+    def get_strategy_table(results: list, filter_conviction=None):
         if not results: return Table.grid()
         
-        # Filter for HIGH CONVICTION ONLY (Score >= 5.0)
-        high_conviction = [r for r in results if r['final_score'] >= 5.0]
-        
-        if not high_conviction:
-            return Panel(Text("NO HIGH-CONVICTION SETUPS DETECTED IN THE CURRENT SCAN CYCLE", style="dim center"), border_style="grey23", padding=(1, 2))
-
-        sectors = {}
-        for r in high_conviction:
-            sec = r.get('sector', 'OTHER')
-            if sec not in sectors: sectors[sec] = []
-            sectors[sec].append(r)
+        # Categorize results by conviction
+        high = [r for r in results if r['final_score'] >= 7.0]
+        med = [r for r in results if 4.0 <= r['final_score'] < 7.0]
+        low = [r for r in results if r['final_score'] < 4.0]
 
         table = Table(show_header=True, header_style=f"bold {DisplayEngine.TEXT_HL}", box=None, expand=True, padding=(0, 1))
         table.add_column("SYMBOL", style=f"bold {DisplayEngine.SYM_COL}", width=12)
         table.add_column("TREND", justify="center", width=12)
         table.add_column("SCORE", justify="right", style=f"{DisplayEngine.SCORE_COL}", width=6)
         table.add_column("CONVICTION", justify="left", width=15)
-        table.add_column("MATCH REASONING (ALGO SIGNALS)", style="grey62", width=35)
+        table.add_column("ALGO REASONING", style="grey62", width=50) # Increased width
         table.add_column("TRADE SETUP (E/SL/T)", justify="left", style=f"{DisplayEngine.SETUP_COL}", min_width=30)
         table.add_column("R:R", justify="right", width=5)
 
-        for sector, hits in sorted(sectors.items()):
-            table.add_row(f"[bold {DisplayEngine.SECTOR_COL}]{sector}[/]", "", "", "", "", "", "")
+        conviction_groups = [
+            ("HIGH CONVICTION (SCORE 7.0+)", high, DisplayEngine.PRICE_UP),
+            ("MEDIUM CONVICTION (SCORE 4.0-7.0)", med, "orange3"),
+            ("LOW CONVICTION (SCORE < 4.0)", low, "grey42")
+        ]
+
+        for label, hits, color in conviction_groups:
+            if not hits: continue
+            table.add_row(f"[bold white on {color}] {label} [/]", "", "", "", "", "", "", style="bold")
+            
             for r in sorted(hits, key=lambda x: x['final_score'], reverse=True):
                 score = r['final_score']
-                color = DisplayEngine.PRICE_UP if score >= 8 else "grey82"
+                s_color = DisplayEngine.PRICE_UP if score >= 5 else "grey82" if score >= 0 else DisplayEngine.PRICE_RED
                 spark = DisplayEngine.get_sparkline(r['metrics'].get('history_20', []), width=10)
                 
                 bar_val = min(int(max(0, score)), 10)
-                badge = f" [bold {DisplayEngine.PRICE_UP}]STRONG[/]" if score >= 8 else f" [{DisplayEngine.PRICE_UP}]BUY[/]"
-                conviction = f"[{color}]{'■' * bar_val}[/][{DisplayEngine.TEXT_DIM}]{'□' * (10-bar_val)}[/]{badge}"
+                badge = f" [bold {DisplayEngine.PRICE_UP}]STRONG[/]" if score >= 8 else f" [{DisplayEngine.PRICE_UP}]BUY[/]" if score >= 5 else ""
+                conviction = f"[{s_color}]{'■' * bar_val}[/][{DisplayEngine.TEXT_DIM}]{'□' * (10-bar_val)}[/]{badge}"
                 
-                # Signal Explanation
-                reason = ", ".join([m.replace("_", " ").title() for m in r['matches']])
+                # REASONING: Show the primary technical reason from the first match
+                primary_match = r['matches'][0] if r['matches'] else {}
+                reason = primary_match.get('reason', "Pattern confluence detected.")
                 
                 plan = r['plans'][0] if r['plans'] else {}
                 setup = f"E:{plan.get('entry', 0):.0f} / SL:{plan.get('stop_loss', 0):.0f} / T:{plan.get('target_1', 0):.0f}"
                 
-                table.add_row(
-                    r['symbol'], spark, f"{score:+.1f}", conviction, 
-                    reason, setup, f"{plan.get('rr', 0):.1f}"
-                )
+                table.add_row(r['symbol'], spark, f"{score:+.1f}", conviction, reason, setup, f"{plan.get('rr', 0):.1f}")
+        
         return table
 
     @staticmethod
@@ -199,7 +194,7 @@ class DisplayEngine:
             comps.append(cls.get_backtest_report(backtest_stats))
         else:
             comps.append(cls.get_screener_grid(screener_hits or {}))
-            comps.append(Rule(style="grey30", title=" HIGH-CONVICTION TRADE SETUPS (SCORE ≥ 5.0) "))
+            comps.append(Rule(style="grey30", title=" DYNAMIC CONVICTION ACTION LIST "))
             comps.append(cls.get_strategy_table(results or []))
         comps.append(cls.get_footer(scan_info or {}))
         return Group(*comps)

@@ -1,92 +1,134 @@
 # --- MOMENTUM ---
 - name: "RSI Oversold <30"
+  reason: "Price is deeply oversold, indicating a high probability for a mean-reversion bounce."
   conditions: [{metric: rsi_14, op: "<", value: 30}]
 - name: "RSI Extreme Oversold <20"
+  reason: "Maximum selling pressure detected; traditionally precedes sharp institutional recovery."
   conditions: [{metric: rsi_14, op: "<", value: 20}]
 - name: "RSI Overbought >70"
+  reason: "Trend is overextended to the upside; high risk of temporary pullback or profit booking."
   conditions: [{metric: rsi_14, op: ">", value: 70}]
 - name: "Stoch RSI Bullish"
+  reason: "Secondary momentum is turning up, suggesting a new wave of local buying interest."
   conditions: [{metric: stoch_rsi, op: "<", value: 20}]
 - name: "MACD Bullish Cross"
+  reason: "Moving average convergence/divergence has flipped positive, confirming trend acceleration."
   conditions: [{metric: macd_bullish_cross, op: "==", value: true}]
 - name: "Stoch RSI Overbought"
+  reason: "Short-term momentum is exhausted; expect consolidation or minor correction."
   conditions: [{metric: stoch_rsi, op: ">", value: 80}]
 - name: "Momentum Breakout"
+  reason: "Price is moving with strong velocity and high volume, indicating a strong trend continuation."
   conditions: [{metric: rsi_14, op: ">", value: 60}, {metric: volume_ratio, op: ">", value: 2.0}]
 
 # --- TREND / MOVING AVERAGES ---
 - name: "Golden Cross MA25/50"
+  reason: "Short-term averages have crossed above medium-term, a classic sign of a sustained bull move."
   conditions: [{metric: ma25_crossed_above_ma50, op: "==", value: true}]
 - name: "Price Above MA200"
+  reason: "Stock is trading in a long-term bull market, providing a safety net for swing entries."
   conditions: [{metric: price_above_ma200, op: "==", value: true}]
 - name: "Supertrend Bullish"
+  reason: "Proprietary volatility-adjusted trend is positive, favoring directional long positions."
   conditions: [{metric: supertrend_bullish, op: "==", value: true}]
 - name: "Price Cross Above MA50"
+  reason: "Price has reclaimed the 50-day average, signaling a shift back to bullish sentiment."
   conditions: [{metric: price_crossed_above_ma50, op: "==", value: true}]
 - name: "Long Term Bearish (EMA200)"
+  reason: "Price is below long-term trendline; bounce attempts likely to face selling pressure."
   conditions: [{metric: price_above_ma200, op: "==", value: false}]
 - name: "Trend Reversal (MA50)"
+  reason: "Sudden reclaim of key intermediate-term moving average suggests a trend shift."
   conditions: [{metric: price_crossed_above_ma50, op: "==", value: true}]
 
 # --- VOLUME & ACCUMULATION ---
 - name: "Big Deal 3x+"
+  reason: "Exceptional volume (3x avg) suggests institutional accumulation or 'block' buying."
   conditions: [{metric: volume_ratio, op: ">=", value: 3.0}]
 - name: "Massive Volume 5x+"
+  reason: "Critical volume spike (5x avg); usually accompanies major news or fund entry."
   conditions: [{metric: volume_ratio, op: ">=", value: 5.0}]
 - name: "Volume Spike"
+  reason: "Trading activity is picking up, confirming interest in the current price levels."
   conditions: [{metric: volume_ratio, op: ">", value: 1.5}]
 - name: "Volume Drying Up"
+  reason: "Lack of selling pressure; often occurs before a significant breakout move."
   conditions: [{metric: volume_ratio, op: "<", value: 0.5}]
 
 # --- VOLATILITY & PRICE LEVELS ---
 - name: "BB Squeeze"
+  reason: "Bollinger Bands have tightened significantly; implies a major price explosion is imminent."
   conditions: [{metric: bb_squeeze, op: "==", value: true}]
 - name: "Near 52W High"
+  reason: "Stock is testing annual resistance; success here often leads to blue-sky breakout."
   conditions: [{metric: near_52w_high, op: "==", value: true}]
 - name: "Near 52W Low"
+  reason: "Trading near annual supports; potential bottom-fishing opportunity for value buyers."
   conditions: [{metric: near_52w_low, op: "==", value: true}]
 - name: "Volatility Expansion"
+  reason: "Consolidation has ended; price is breaking out of a tight range with force."
   conditions: [{metric: bb_squeeze, op: "==", value: false}, {metric: volume_ratio, op: ">", value: 2.0}]
 
 # --- PRICE ACTION / PATTERNS ---
 - name: "Inside Bar"
+  reason: "Price is coiled within the previous day's range; waiting for a directional breakout."
   conditions: [{metric: inside_bar, op: "==", value: true}]
 - name: "NR7 Range"
+  reason: "Dorest day range in 7 sessions; volatility is at a minimum, typically followed by a trend push."
   conditions: [{metric: nr7, op: "==", value: true}]
 - name: "Bullish Hammer"
+  reason: "Rejection of lower prices with a strong close; classic 'buy the dip' reversal candle."
   conditions: [{metric: hammer, op: "==", value: true}]
 - name: "Indecision Doji"
+  reason: "Buyers and sellers are in equilibrium; a breakout from doji high/low defines future trend."
   conditions: [{metric: doji, op: "==", value: true}]
 - name: "Engulfing Bullish"
+  reason: "Price action has completely swallowed previous day's selling, indicating a strong trend pivot."
   conditions: [{metric: hammer, op: "==", value: true}, {metric: price_above_ma200, op: "==", value: true}]
 - name: "Morning Star Potential"
+  reason: "Combining oversold conditions with reversal candles; signs of a lasting bottom."
   conditions: [{metric: rsi_14, op: "<", value: 30}, {metric: hammer, op: "==", value: true}]
 - name: "Gap Up Open"
+  reason: "Overnight demand surpassed supply; bulls are in complete control of the open."
   conditions: [{metric: volume_ratio, op: ">", value: 1.2}]
 - name: "Bearish Engulfing"
+  reason: "Selling pressure is intense; profit-taking or short-entry signal in overbought zone."
   conditions: [{metric: rsi_14, op: ">", value: 70}]
 
 - name: "EMA 20/50 Cross"
+  reason: "Exponential averages signaling a faster trend acceleration vs simple averages."
   conditions: [{metric: price_above_ma200, op: "==", value: true}]
 - name: "RSI Divergence Setup"
+  reason: "Price weakness meeting volume accumulation; often a lead indicator for trend turn."
   conditions: [{metric: rsi_14, op: "<", value: 35}, {metric: volume_ratio, op: ">", value: 1.2}]
 - name: "High Volume Pullback"
+  reason: "Buying opportunity on a healthy dip within a strong institutional move."
   conditions: [{metric: rsi_14, op: "<", value: 45}, {metric: volume_ratio, op: ">", value: 2.0}]
 - name: "ATR Breakout"
+  reason: "Volatility-based entry signal; price range is expanding as the trend begins."
   conditions: [{metric: bb_squeeze, op: "==", value: false}, {metric: volume_ratio, op: ">", value: 3.0}]
 - name: "Support Bounce"
+  reason: "Testing long term support zones with bullish candle confirmation."
   conditions: [{metric: near_52w_low, op: "==", value: true}, {metric: hammer, op: "==", value: true}]
 - name: "Resistance Breakout"
+  reason: "Clearing major 52W hurdle with volume confirmation; blue sky territory ahead."
   conditions: [{metric: near_52w_high, op: "==", value: true}, {metric: volume_ratio, op: ">", value: 2.0}]
 - name: "Mean Reversion"
+  reason: "Counter-trend trade setup; oversold levels with signs of price stabilization."
   conditions: [{metric: rsi_14, op: "<", value: 25}, {metric: doji, op: "==", value: true}]
 - name: "Trend Stamina"
+  reason: "Strong long-term momentum; stock is consistently outperforming the broad market."
   conditions: [{metric: rsi_14, op: ">", value: 65}, {metric: price_above_ma200, op: "==", value: true}]
 - name: "Volume Climax"
+  reason: "Exhaustion volume at peaks; indicator of potential short-term blow-off top."
   conditions: [{metric: volume_ratio, op: ">", value: 4.0}, {metric: rsi_14, op: ">", value: 75}]
 - name: "Dead Cat Bounce Watch"
+  reason: "Warning: Bounce in a primary downtrend; typically face heavy resistance at overhead supply."
   conditions: [{metric: rsi_14, op: "<", value: 20}, {metric: price_above_ma200, op: "==", value: false}]
 - name: "Nifty Bull Runner"
   conditions: [{metric: price_crossed_above_ma50, op: "==", value: true}, {metric: supertrend_bullish, op: "==", value: true}]
+  reason: "Double confirmation of bullishness; intermediate trend and volatility trend align."
 - name: "Multi-Day Squeeze"
   conditions: [{metric: bb_squeeze, op: "==", value: true}, {metric: nr7, op: "==", value: true}]
+  reason: "Extreme volatility contraction; usually followed by a massive directional move."
+

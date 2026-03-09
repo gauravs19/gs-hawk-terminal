@@ -70,29 +70,33 @@ def scan_cycle(config, args):
                 
             matches = se.run_screeners(metrics)
             if not matches: continue
-            if args.screen and args.screen not in matches: continue
+            
+            # Simple list of names for backward compat in some checks if needed
+            match_names = [m['name'] for m in matches]
+            if args.screen and args.screen not in match_names: continue
                 
-            base_score = sc.calculate_base_score(matches, metrics)
+            base_score = sc.calculate_base_score(match_names, metrics)
             m_score = sc.apply_macro_multiplier(base_score, macro_summary['multiplier'])
             
             # Apply sector boost
             sector_metrics = sce.get_sector_relative_strength(sym)
             f_score = sc.apply_sector_influence(m_score, sector_metrics)
             
-            plans = ste.evaluate(sym, metrics.get('price', 0), matches)
+            plans = ste.evaluate(sym, metrics.get('price', 0), match_names)
             if not plans:
                 plans = [{"strategy": "Basic Momentum", "entry": metrics['price'] * 1.005, "stop_loss": metrics['price'] * 0.98, "target_1": metrics['price'] * 1.05, "rr": 2.5}]
             
             for m in matches:
-                if m not in screener_hits: screener_hits[m] = []
-                screener_hits[m].append({"symbol": sym, "price": metrics['price'], "score": f_score, "history": metrics.get('history_20', [])})
+                name = m['name']
+                if name not in screener_hits: screener_hits[name] = []
+                screener_hits[name].append({"symbol": sym, "price": metrics['price'], "score": f_score, "history": metrics.get('history_20', [])})
 
             results.append({
                 "symbol": sym, "sector": sce.get_stock_sector(sym),
                 "metrics": metrics, "matches": matches, "plans": plans, "final_score": f_score
             })
             metrics['final_score'] = f_score 
-            ad.dispatch(sym, matches[0], metrics, plans[0])
+            ad.dispatch(sym, matches[0]['name'], metrics, plans[0])
 
     # --- SCAN COMPLETE ---
     # Print final output to console for infinite scroll history

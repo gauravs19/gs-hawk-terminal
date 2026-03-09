@@ -29,5 +29,5 @@ class ScreenerEngine:
                 elif op == ">=" and actual < val: match = False
                 
             if match:
-                matched.append(s["name"])
+                matched.append(s) # Return full dict
         return matched
