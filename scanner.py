@@ -21,7 +21,7 @@ def load_config():
         return yaml.safe_load(f)
 
 def scan_cycle(config, args, live):
-    scan_info = {"interval": f"{args.interval}m", "live": args.watch, "task": "INITIALIZING"}
+    scan_info = {"interval": f"{args.interval}m", "live": args.watch, "task": "INITIALIZING", "next_in": "00:00"}
     live.update(DisplayEngine.make_renderable(scan_info=scan_info))
 
     dl = DataLayer(config["cache"]["db_path"])
@@ -79,14 +79,27 @@ def scan_cycle(config, args, live):
         
         for m in matches:
             if m not in screener_hits: screener_hits[m] = []
-            screener_hits[m].append({"symbol": sym, "price": metrics['price'], "score": f_score})
+            screener_hits[m].append({
+                "symbol": sym, 
+                "price": metrics['price'], 
+                "score": f_score,
+                "history": metrics.get('history_20', [])
+            })
 
-        results.append({"symbol": sym, "metrics": metrics, "matches": matches, "plans": plans, "final_score": f_score})
+        results.append({
+            "symbol": sym, 
+            "sector": sce.get_stock_sector(sym),
+            "metrics": metrics, 
+            "matches": matches, 
+            "plans": plans, 
+            "final_score": f_score
+        })
         ad.dispatch(sym, matches[0], metrics, plans[0])
 
     scan_info["task"] = "IDLE (WAITING)"
     scan_info["cache_size"] = len(results) * 200
     live.update(DisplayEngine.make_renderable(macro_summary=macro_summary, sector_summary=sector_summary, screener_hits=screener_hits, results=results, scan_info=scan_info))
+    return macro_summary, sector_summary, screener_hits, results
 
 def main():
     parser = argparse.ArgumentParser(description="GS Hawk Terminal - Pattern Scanner")
@@ -98,13 +111,24 @@ def main():
 
     config = load_config()
     
-    # Lower refresh rate for stability
-    with Live(DisplayEngine.make_renderable(scan_info={"task": "STARTING"}), screen=False, refresh_per_second=2) as live:
+    with Live(DisplayEngine.make_renderable(scan_info={"task": "STARTING", "live": args.watch}), screen=False, refresh_per_second=2) as live:
         while True:
-            scan_cycle(config, args, live)
+            macro, sectors, hits, results = scan_cycle(config, args, live)
             if not args.watch:
                 break
-            time.sleep(args.interval * 60)
+            
+            # Countdown loop
+            interval_sec = args.interval * 60
+            for i in range(interval_sec, 0, -1):
+                m, s = divmod(i, 60)
+                scan_info = {
+                    "task": "IDLE (SLEEP)", 
+                    "interval": f"{args.interval}m", 
+                    "live": True, 
+                    "next_in": f"{m:02d}:{s:02d}"
+                }
+                live.update(DisplayEngine.make_renderable(macro, sectors, hits, results, scan_info))
+                time.sleep(1)
 
 if __name__ == "__main__":
     main()

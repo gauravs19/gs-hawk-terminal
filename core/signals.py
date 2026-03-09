@@ -15,6 +15,7 @@ class SignalEngine:
         
         metrics = {}
         metrics['price'] = close.iloc[-1]
+        metrics['history_20'] = close.tail(20).tolist()
         
         # --- MOVING AVERAGES ---
         metrics['ma25'] = close.rolling(25).mean().iloc[-1]
