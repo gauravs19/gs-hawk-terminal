@@ -28,15 +28,17 @@ GS Hawk Terminal is a high-performance, Bloomberg-inspired Terminal User Interfa
 
 ## 🛠️ Installation
 
-1. **Clone the repository**:
+1. **Clone and Install**:
    ```bash
    git clone https://github.com/gauravs19/gs-hawk-terminal.git
    cd gs-hawk-terminal
+   pip install .
    ```
 
-2. **Setup environment**:
+2. **Run Anywhere**:
+   Once installed, you can simply run:
    ```bash
-   pip install -r requirements.txt
+   gs-hawk --watch
    ```
 
 3. **Configure Settings**:
