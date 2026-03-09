@@ -10,3 +10,4 @@ pip_out_utf8.txt
 check_cache.py
 docs/SPEC.md
 scan_output.txt
+.egg-info/
