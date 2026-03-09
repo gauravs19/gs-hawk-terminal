@@ -4,34 +4,29 @@ from rich.panel import Panel
 from rich.columns import Columns
 from rich.text import Text
 from rich.rule import Rule
-from rich.box import DOUBLE, ROUNDED
+from rich.box import DOUBLE, ROUNDED, MINIMAL, SIMPLE, SQUARE
 from datetime import datetime
 
 console = Console()
 
 class DisplayEngine:
-    # Bloomberg / Ticker Palette
-    BG_HEADER = "on orange3"
-    TEXT_HL = "orange3"
-    TEXT_DIM = "grey50"
-    PRICE_UP = "spring_green3"
-    PRICE_RED = "red3"
-    CYAN = "cyan"
+    # Subtle Bloomberg-Inspired Palette (Dark Grey Theme)
+    BG_HEADER = "on grey19"
+    TEXT_HL = "grey78"       
+    TEXT_DIM = "grey42"      
+    PRICE_UP = "spring_green4"
+    PRICE_RED = "deep_pink4"
+    CYAN = "sky_blue3"       
 
     @staticmethod
     def get_sparkline(prices: list, width: int = 15) -> str:
-        """Generates a text-based sparkline using Unicode bar characters."""
         if not prices or len(prices) < 2: return " " * width
-        
-        # Subsample to target width
         if len(prices) > width:
             indices = [int(i * (len(prices) - 1) / (width - 1)) for i in range(width)]
             prices = [prices[idx] for idx in indices]
         
-        p_min = min(prices)
-        p_max = max(prices)
-        p_range = p_max - p_min
-        if p_range == 0: p_range = 1
+        p_min, p_max = min(prices), max(prices)
+        p_range = max(1, p_max - p_min)
         
         bars = " ▂▃▄▅▆▇█"
         spark = ""
@@ -44,202 +39,131 @@ class DisplayEngine:
 
     @staticmethod
     def get_header():
-        now = datetime.now().strftime("%d %b %Y | %H:%M:%S")
+        now = datetime.now().strftime("%H:%M:%S")
         pulse = "●" if int(datetime.now().second) % 2 == 0 else "○"
-        
-        header_table = Table.grid(expand=True)
-        header_table.add_column(justify="left")
-        header_table.add_column(justify="right")
-        
-        header_table.add_row(
-            Text(f" GS HAWK TERM 1.1 ", style=f"bold black {DisplayEngine.BG_HEADER}"),
-            Text(f"{pulse} REAL-TIME {pulse} | {now} ", style=f"bold {DisplayEngine.TEXT_HL}")
+        header = Table.grid(expand=True)
+        header.add_column(justify="left")
+        header.add_column(justify="right")
+        header.add_row(
+            Text(f" 🦅 GS HAWK 1.1 ", style=f"bold grey85 {DisplayEngine.BG_HEADER}"),
+            Text(f"{pulse} LIVE NSE | {now} ", style=f"bold {DisplayEngine.TEXT_HL} {DisplayEngine.BG_HEADER}")
         )
-        return header_table
+        return Panel(header, box=SQUARE, border_style="grey19", style=DisplayEngine.BG_HEADER, padding=(0,0))
 
     @staticmethod
     def get_market_intelligence(macro: dict, sectors: dict):
-        mood_color = "green" if macro.get('score', 0) > 5 else "red" if macro.get('score', 0) < 3 else "white"
-        mood_str = f"MOOD: [bold {mood_color}]{macro.get('mood', 'N/A')}[/] ({macro.get('score', 0)}/8)"
+        # Ultra-compact 1-panel Market Intel
+        mood_color = DisplayEngine.PRICE_UP if macro.get('score', 0) > 5 else DisplayEngine.PRICE_RED if macro.get('score', 0) < 3 else "grey70"
+        mood = f"MOOD: [bold {mood_color}]{macro.get('mood', 'N/A')}[/] ({macro.get('score', 0)}/8)"
         
         factors = []
         for name, data in list(macro.get('factors', {}).items()):
             c = DisplayEngine.PRICE_UP if data.get('change', 0) > 0 else DisplayEngine.PRICE_RED
-            short = name.split()[0].replace("Nikkei", "NKY").replace("Hang", "HSI")
+            short = name.split()[0][:3].upper().replace("NIK", "NKY")
             factors.append(f"{short}[{c}]{data.get('change', 0):+.1f}%[/]")
         
-        macro_line = Text.assemble((mood_str, "default"), (" | ", "dim"), (" ".join(factors), "default"))
+        intel_line = Text.assemble((mood, "default"), (" | ", "dim"), (" ".join(factors), "default"))
         
         leaders = " ".join([f"{n}[{DisplayEngine.PRICE_UP}]+{d['change_1d']:.1f}%[/]" for n, d in sectors.get('leaders', [])])
         sector_line = Text.assemble(("PULSE: ", "dim"), (leaders, "default"))
 
-        intel_grid = Table.grid(expand=True)
-        intel_grid.add_row(Panel(macro_line, border_style=DisplayEngine.TEXT_HL, box=ROUNDED, padding=(0, 1)))
-        intel_grid.add_row(Panel(sector_line, border_style=DisplayEngine.TEXT_DIM, box=ROUNDED, padding=(0,1)))
-        return intel_grid
+        grid = Table.grid(expand=True)
+        grid.add_row(intel_line)
+        grid.add_row(sector_line)
+        return Panel(grid, border_style=DisplayEngine.TEXT_DIM, box=SQUARE, padding=(0,1))
 
     @staticmethod
     def get_screener_grid(screener_hits: dict):
-        if not screener_hits:
-            return Text("SCANNING STOCKS...", style="dim")
-
-        panels = []
-        # Sort by most hits
+        if not screener_hits: return Text("SCANNING UNIVERSE...", style=DisplayEngine.TEXT_DIM)
+        
+        grid = Table.grid(expand=True, padding=(0, 2))
+        for _ in range(3): grid.add_column(ratio=1)
+        
         sorted_hits = sorted(screener_hits.items(), key=lambda x: len(x[1]), reverse=True)
-        
-        for name, stocks in sorted_hits: # No limit on screeners
-            if not stocks: continue
+        for i in range(0, len(sorted_hits), 3):
+            chunk = sorted_hits[i:i+3]
+            row_items = []
+            for name, stocks in chunk:
+                stock_summary = ", ".join([s['symbol'].replace(".NS","") for s in stocks[:3]])
+                if len(stocks) > 3: stock_summary += f" +{len(stocks)-3}"
+                row_items.append(Text.assemble((f"{name.upper()}: ", f"bold {DisplayEngine.TEXT_HL}"), (stock_summary, "white")))
+            grid.add_row(*row_items)
             
-            stock_rows = []
-            for s in stocks: # No limit on stocks per screener
-                color = DisplayEngine.PRICE_UP if s['score'] >= 5 else "white"
-                spark = DisplayEngine.get_sparkline(s.get('history', []), width=6)
-                stock_rows.append(f"[{color}]{s['symbol']:<10}[/] {spark}")
-            
-            if len(stocks) > 4:
-                stock_rows.append(f"[dim] +{len(stocks)-4} hits[/]")
-            
-            panels.append(Panel(
-                "\n".join(stock_rows), 
-                title=f" {name.upper()} ", 
-                title_align="left", 
-                border_style=DisplayEngine.TEXT_DIM,
-                padding=(0, 1)
-            ))
-        
-        return Columns(panels, equal=True, expand=True)
+        return Panel(grid, title=" SCREENER ALERTS ", border_style=DisplayEngine.TEXT_DIM, box=SQUARE)
 
     @staticmethod
     def get_strategy_table(results: list):
-        if not results:
-            return Table.grid()
-
-        # Group by Sector for better visibility (TICKER style)
+        if not results: return Table.grid()
+        
         sectors = {}
         for r in results:
             sec = r.get('sector', 'OTHER')
             if sec not in sectors: sectors[sec] = []
             sectors[sec].append(r)
 
-        table = Table(
-            show_header=True, 
-            header_style=f"bold {DisplayEngine.TEXT_HL}", 
-            box=None, 
-            expand=True,
-            collapse_padding=True,
-            padding=(0, 1)
-        )
+        table = Table(show_header=True, header_style=f"bold {DisplayEngine.TEXT_HL}", box=None, expand=True, padding=(0, 1))
         table.add_column("SYMBOL", style=f"bold {DisplayEngine.CYAN}", width=12)
-        table.add_column("TREND (20D)", justify="center", width=12)
+        table.add_column("TREND", justify="center", width=12)
         table.add_column("SCORE", justify="right", width=6)
-        table.add_column("CONVICTION", justify="left", min_width=25)
-        table.add_column("TRADE SETUP (ENTRY/SL/T1)", justify="left", min_width=35)
+        table.add_column("CONVICTION", justify="left")
+        table.add_column("TRADE SETUP", justify="left", min_width=30)
         table.add_column("R:R", justify="right", width=5)
 
         for sector, hits in sorted(sectors.items()):
-            # Sector separator row
-            table.add_row(f"[bold white on blue] {sector} [/]", "", "", "", "", "", style="dim")
-            
+            table.add_row(f"[bold grey62]{sector}[/]", "", "", "", "", "", style="dim")
             for r in sorted(hits, key=lambda x: x['final_score'], reverse=True):
                 score = r['final_score']
-                color = DisplayEngine.PRICE_UP if score >= 5 else "white" if score >= 2 else DisplayEngine.PRICE_RED
-                
+                color = DisplayEngine.PRICE_UP if score >= 5 else "grey85" if score >= 2 else DisplayEngine.PRICE_RED
                 spark = DisplayEngine.get_sparkline(r['metrics'].get('history_20', []), width=10)
                 
-                # Visual Bar + Badge
                 bar_val = min(int(max(0, score)), 10)
-                dim_val = 10 - bar_val
-                badge = " [bold green]STRONG[/]" if score >= 8 else " [green]BUY[/]" if score >= 5 else ""
-                conviction = f"[{color}]{'■' * bar_val}[/][dim]{'□' * dim_val}[/]{badge}"
+                badge = f" [bold {DisplayEngine.PRICE_UP}]STRONG[/]" if score >= 8 else f" [{DisplayEngine.PRICE_UP}]BUY[/]" if score >= 5 else ""
+                conviction = f"[{color}]{'■' * bar_val}[/][{DisplayEngine.TEXT_DIM}]{'□' * (10-bar_val)}[/]{badge}"
                 
                 plan = r['plans'][0] if r['plans'] else {}
-                setup = f"[white]E:{plan.get('entry', 0):.0f}[/] / [dim]SL:{plan.get('stop_loss', 0):.0f} / T:{plan.get('target_1', 0):.0f}[/]"
+                setup = f"E:{plan.get('entry', 0):.0f} / SL:{plan.get('stop_loss', 0):.0f} / T:{plan.get('target_1', 0):.0f}"
                 
-                table.add_row(
-                    r['symbol'], 
-                    spark,
-                    f"[{color}]{score:+.1f}[/]", 
-                    conviction, 
-                    setup, 
-                    f"{plan.get('rr', 0):.1f}"
-                )
+                table.add_row(r['symbol'], spark, f"[{color}]{score:+.1f}[/]", conviction, setup, f"{plan.get('rr', 0):.1f}")
         return table
 
     @staticmethod
     def get_backtest_report(stats: dict):
         if not stats or stats.get('total_trades', 0) == 0:
-            return Panel(Text("NO TRADES EXECUTED IN BACKTEST PERIOD", style="bold red"), border_style="red")
+            return Panel(Text("NO TRADES EXECUTED", style="bold red"), border_style="red")
 
-        # KPI Header
-        kpi_table = Table.grid(expand=True)
-        kpi_table.add_column(); kpi_table.add_column(); kpi_table.add_column(); kpi_table.add_column()
+        kpi = Table.grid(expand=True)
+        kpi.add_column(); kpi.add_column(); kpi.add_column(); kpi.add_column()
+        roi_c = DisplayEngine.PRICE_UP if stats['roi'] > 0 else DisplayEngine.PRICE_RED
         
-        roi_color = DisplayEngine.PRICE_UP if stats['roi'] > 0 else DisplayEngine.PRICE_RED
-        wr_color = "yellow" if stats['win_rate'] > 50 else "white"
-        
-        kpi_table.add_row(
-            Panel(Text.assemble(("TOTAL TRADES\n", "dim"), (f"{stats['total_trades']}", "bold")), border_style=DisplayEngine.TEXT_HL, expand=True),
-            Panel(Text.assemble(("WIN RATE\n", "dim"), (f"{stats['win_rate']:.1f}%", f"bold {wr_color}")), border_style=DisplayEngine.TEXT_HL, expand=True),
-            Panel(Text.assemble(("TOTAL P&L\n", "dim"), (f"₹{stats['pnl']:,.2f}", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL, expand=True),
-            Panel(Text.assemble(("ROI\n", "dim"), (f"{stats['roi']:+.2f}%", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL, expand=True)
+        kpi.add_row(
+            Panel(Text.assemble(("TRADES\n", "dim"), (f"{stats['total_trades']}", "bold")), expand=True, box=SQUARE),
+            Panel(Text.assemble(("WIN%\n", "dim"), (f"{stats['win_rate']:.1f}%", "bold")), expand=True, box=SQUARE),
+            Panel(Text.assemble(("P&L\n", "dim"), (f"₹{stats['pnl']:,.0f}", f"bold {roi_c}")), expand=True, box=SQUARE),
+            Panel(Text.assemble(("ROI\n", "dim"), (f"{stats['roi']:+.2f}%", f"bold {roi_c}")), expand=True, box=SQUARE)
         )
 
-        # Trade List
-        trade_table = Table(show_header=True, header_style=f"bold {DisplayEngine.TEXT_HL}", box=None, expand=True)
-        trade_table.add_column("DATE", ratio=1)
-        trade_table.add_column("SYMBOL", ratio=1)
-        trade_table.add_column("ENTRY", justify="right", ratio=1)
-        trade_table.add_column("EXIT", justify="right", ratio=1)
-        trade_table.add_column("P&L %", justify="right", ratio=1)
-        trade_table.add_column("RESULT", justify="center", ratio=1)
+        trades = Table(show_header=True, header_style="dim", box=None, expand=True)
+        for col in ["DATE", "SYMBOL", "ENTRY", "EXIT", "P&L%", "RES"]: trades.add_column(col)
 
-        for t in stats.get('trades_list', []): # Show all trades
+        for t in stats.get('trades_list', []):
             color = DisplayEngine.PRICE_UP if t['pnl'] > 0 else DisplayEngine.PRICE_RED
-            res_label = "[bold green]TP[/]" if t['result'] == 'TP' else "[bold red]SL[/]"
-            trade_table.add_row(
-                t['entry_date'].strftime("%Y-%m-%d"),
-                t['symbol'],
-                f"{t['entry_price']:.2f}",
-                f"{t['exit_price']:.2f}",
-                f"[{color}]{t['return_pct']:+.2f}%[/]",
-                res_label
-            )
+            trades.add_row(t['entry_date'].strftime("%y-%m-%d"), t['symbol'], f"{t['entry_price']:.1f}", f"{t['exit_price']:.1f}", f"[{color}]{t['return_pct']:+.1f}%[/]", t['result'])
 
-        return Group(
-            Rule(style=DisplayEngine.TEXT_HL, title=" BACKTEST PERFORMANCE REPORT "),
-            kpi_table,
-            Panel(trade_table, title=" RECENT EXECUTIONS ", border_style="dim")
-        )
+        return Group(Rule(title=" BACKTEST ENGINE ", style=DisplayEngine.TEXT_DIM), kpi, trades)
 
     @staticmethod
-    def get_footer(scan_info: dict):
-        footer = Table.grid(expand=True)
-        footer.add_column(ratio=1); footer.add_column(ratio=1)
-        
-        task = scan_info.get('task', 'IDLE')
-        status = f"STATUS: [bold {DisplayEngine.TEXT_HL}]{task}[/]"
-        countdown = f" | NEXT SCAN: {scan_info.get('next_in', '00:00')}" if scan_info.get('live') else ""
-        
-        footer.add_row(
-            Text.assemble((" Q-Quit  R-Reset  F1-Help ", "dim")),
-            Text(f"{status}{countdown} | ENGINE V1.1", justify="right", style="dim")
-        )
-        return Group(Rule(style=DisplayEngine.TEXT_HL), footer)
+    def get_footer(info: dict):
+        status = f"STATUS: [bold {DisplayEngine.TEXT_HL}]{info.get('task', 'IDLE')}[/]"
+        count = f" | NEXT: {info.get('next_in', '00:00')}" if info.get('live') else ""
+        return Group(Rule(style=DisplayEngine.TEXT_DIM), Text(f"Q-Quit R-Reset | {status}{count} | V1.1", justify="right", style=DisplayEngine.TEXT_DIM))
 
     @classmethod
     def make_renderable(cls, macro_summary=None, sector_summary=None, screener_hits=None, results=None, scan_info=None, backtest_stats=None):
-        """Final Layout assembly for the Bloomberg TUI."""
-        components = [
-            cls.get_header(),
-            cls.get_market_intelligence(macro_summary or {}, sector_summary or {})
-        ]
-        
+        comps = [cls.get_header(), cls.get_market_intelligence(macro_summary or {}, sector_summary or {})]
         if backtest_stats:
-            components.append(cls.get_backtest_report(backtest_stats))
+            comps.append(cls.get_backtest_report(backtest_stats))
         else:
-            components.append(cls.get_screener_grid(screener_hits or {}))
-            components.append(Rule(style="dim", title=" TRADE STRATEGIES & SIGNALS "))
-            components.append(cls.get_strategy_table(results or []))
-            
-        components.append(cls.get_footer(scan_info or {}))
-        return Group(*components)
+            comps.append(cls.get_screener_grid(screener_hits or {}))
+            comps.append(cls.get_strategy_table(results or []))
+        comps.append(cls.get_footer(scan_info or {}))
+        return Group(*comps)

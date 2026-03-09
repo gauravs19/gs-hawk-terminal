@@ -22,6 +22,7 @@ def load_config():
         return yaml.safe_load(f)
 
 def scan_cycle(config, args, live):
+    console.clear() # Reset terminal for full-page render
     scan_info = {"interval": f"{args.interval}m", "live": args.watch, "task": "INITIALIZING", "next_in": "00:00"}
     live.update(DisplayEngine.make_renderable(scan_info=scan_info))
 
