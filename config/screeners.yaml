@@ -66,3 +66,27 @@
 - name: "Bearish Engulfing"
   conditions: [{metric: rsi_14, op: ">", value: 70}]
 
+- name: "EMA 20/50 Cross"
+  conditions: [{metric: price_above_ma200, op: "==", value: true}]
+- name: "RSI Divergence Setup"
+  conditions: [{metric: rsi_14, op: "<", value: 35}, {metric: volume_ratio, op: ">", value: 1.2}]
+- name: "High Volume Pullback"
+  conditions: [{metric: rsi_14, op: "<", value: 45}, {metric: volume_ratio, op: ">", value: 2.0}]
+- name: "ATR Breakout"
+  conditions: [{metric: bb_squeeze, op: "==", value: false}, {metric: volume_ratio, op: ">", value: 3.0}]
+- name: "Support Bounce"
+  conditions: [{metric: near_52w_low, op: "==", value: true}, {metric: hammer, op: "==", value: true}]
+- name: "Resistance Breakout"
+  conditions: [{metric: near_52w_high, op: "==", value: true}, {metric: volume_ratio, op: ">", value: 2.0}]
+- name: "Mean Reversion"
+  conditions: [{metric: rsi_14, op: "<", value: 25}, {metric: doji, op: "==", value: true}]
+- name: "Trend Stamina"
+  conditions: [{metric: rsi_14, op: ">", value: 65}, {metric: price_above_ma200, op: "==", value: true}]
+- name: "Volume Climax"
+  conditions: [{metric: volume_ratio, op: ">", value: 4.0}, {metric: rsi_14, op: ">", value: 75}]
+- name: "Dead Cat Bounce Watch"
+  conditions: [{metric: rsi_14, op: "<", value: 20}, {metric: price_above_ma200, op: "==", value: false}]
+- name: "Nifty Bull Runner"
+  conditions: [{metric: price_crossed_above_ma50, op: "==", value: true}, {metric: supertrend_bullish, op: "==", value: true}]
+- name: "Multi-Day Squeeze"
+  conditions: [{metric: bb_squeeze, op: "==", value: true}, {metric: nr7, op: "==", value: true}]
