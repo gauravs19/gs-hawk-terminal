@@ -3,6 +3,7 @@ pyproject.toml
 scanner.py
 core/__init__.py
 core/alerts.py
+core/backtest.py
 core/data.py
 core/display.py
 core/macro.py

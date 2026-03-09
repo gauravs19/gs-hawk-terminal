@@ -47,7 +47,16 @@ def scan_cycle(config, args, live):
     with open("config/universe.yaml", "r", encoding="utf-8") as f:
         universe = yaml.safe_load(f)
 
-    stocks_to_scan = [s.strip() for s in args.stocks.split(',')] if args.stocks else universe.get("tier1", [])
+    stocks_to_scan = []
+    if args.stocks:
+        stocks_to_scan = [s.strip() for s in args.stocks.split(',')]
+    else:
+        # Scan ALL available tiers for a full market overview
+        for tier in ['tier1', 'tier2', 'tier3', 'tier4', 'tier5']:
+            stocks_to_scan.extend(universe.get(tier, []))
+    
+    # Remove duplicates
+    stocks_to_scan = list(dict.fromkeys(stocks_to_scan))
     
     results = []
     screener_hits = {}

@@ -1,149 +1,68 @@
-# GS Hawk Terminal Screeners Configuration
-# Total Goal: 50 Screeners (Categorized)
-
 # --- MOMENTUM ---
 - name: "RSI Oversold <30"
-  description: "Potential bounce zone"
-  emoji: "🟢"
-  category: "momentum"
   conditions: [{metric: rsi_14, op: "<", value: 30}]
-  logic: AND
-
 - name: "RSI Extreme Oversold <20"
-  description: "Deep value territory"
-  emoji: "🟣"
-  category: "momentum"
   conditions: [{metric: rsi_14, op: "<", value: 20}]
-  logic: AND
-
 - name: "RSI Overbought >70"
-  description: "Caution - trend overstretched"
-  emoji: "🔴"
-  category: "momentum"
   conditions: [{metric: rsi_14, op: ">", value: 70}]
-  logic: AND
-
 - name: "Stoch RSI Bullish"
-  description: "Stoch RSI turning up from oversold"
-  emoji: "🌊"
-  category: "momentum"
   conditions: [{metric: stoch_rsi, op: "<", value: 20}]
-  logic: AND
-
 - name: "MACD Bullish Cross"
-  description: "Momentum turning positive"
-  emoji: "📈"
-  category: "momentum"
   conditions: [{metric: macd_bullish_cross, op: "==", value: true}]
-  logic: AND
+- name: "Stoch RSI Overbought"
+  conditions: [{metric: stoch_rsi, op: ">", value: 80}]
+- name: "Momentum Breakout"
+  conditions: [{metric: rsi_14, op: ">", value: 60}, {metric: volume_ratio, op: ">", value: 2.0}]
 
 # --- TREND / MOVING AVERAGES ---
 - name: "Golden Cross MA25/50"
-  description: "Short-to-medium trend change"
-  emoji: "✨"
-  category: "trend"
   conditions: [{metric: ma25_crossed_above_ma50, op: "==", value: true}]
-  logic: AND
-
 - name: "Price Above MA200"
-  description: "Long term bullish trend"
-  emoji: "🛡️"
-  category: "trend"
   conditions: [{metric: price_above_ma200, op: "==", value: true}]
-  logic: AND
-
 - name: "Supertrend Bullish"
-  description: "Trend following signal"
-  emoji: "🔥"
-  category: "trend"
   conditions: [{metric: supertrend_bullish, op: "==", value: true}]
-  logic: AND
-
 - name: "Price Cross Above MA50"
-  description: "Short term trend breakout"
-  emoji: "🆙"
-  category: "trend"
   conditions: [{metric: price_crossed_above_ma50, op: "==", value: true}]
-  logic: AND
-
-- name: "Nifty Heavyweight Pulling"
-  description: "Strong directional move"
-  emoji: "🐘"
-  category: "trend"
-  conditions: 
-    - {metric: price_crossed_above_ma50, op: "==", value: true}
-    - {metric: volume_ratio, op: ">", value: 1.5}
-  logic: AND
+- name: "Long Term Bearish (EMA200)"
+  conditions: [{metric: price_above_ma200, op: "==", value: false}]
+- name: "Trend Reversal (MA50)"
+  conditions: [{metric: price_crossed_above_ma50, op: "==", value: true}]
 
 # --- VOLUME & ACCUMULATION ---
 - name: "Big Deal 3x+"
-  description: "Institutional activity"
-  emoji: "💎"
-  category: "volume"
   conditions: [{metric: volume_ratio, op: ">=", value: 3.0}]
-  logic: AND
-
 - name: "Massive Volume 5x+"
-  description: "Block deals / News"
-  emoji: "⚡"
-  category: "volume"
   conditions: [{metric: volume_ratio, op: ">=", value: 5.0}]
-  logic: AND
-
 - name: "Volume Spike"
-  description: "Above average volume"
-  emoji: "🔊"
-  category: "volume"
   conditions: [{metric: volume_ratio, op: ">", value: 1.5}]
-  logic: AND
+- name: "Volume Drying Up"
+  conditions: [{metric: volume_ratio, op: "<", value: 0.5}]
 
 # --- VOLATILITY & PRICE LEVELS ---
 - name: "BB Squeeze"
-  description: "Big move imminent"
-  emoji: "🎯"
-  category: "volatility"
   conditions: [{metric: bb_squeeze, op: "==", value: true}]
-  logic: AND
-
 - name: "Near 52W High"
-  description: "Breakout watch"
-  emoji: "🚀"
-  category: "levels"
   conditions: [{metric: near_52w_high, op: "==", value: true}]
-  logic: AND
-
 - name: "Near 52W Low"
-  description: "Deep discount zone"
-  emoji: "📉"
-  category: "levels"
   conditions: [{metric: near_52w_low, op: "==", value: true}]
-  logic: AND
+- name: "Volatility Expansion"
+  conditions: [{metric: bb_squeeze, op: "==", value: false}, {metric: volume_ratio, op: ">", value: 2.0}]
 
 # --- PRICE ACTION / PATTERNS ---
 - name: "Inside Bar"
-  description: "Consolidation before move"
-  emoji: "⏸️"
-  category: "patterns"
   conditions: [{metric: inside_bar, op: "==", value: true}]
-  logic: AND
-
 - name: "NR7 Range"
-  description: "Narrowest range in 7 days"
-  emoji: "🧲"
-  category: "patterns"
   conditions: [{metric: nr7, op: "==", value: true}]
-  logic: AND
-
 - name: "Bullish Hammer"
-  description: "Bottom reversal signal"
-  emoji: "🔨"
-  category: "patterns"
   conditions: [{metric: hammer, op: "==", value: true}]
-  logic: AND
-
 - name: "Indecision Doji"
-  description: "Market pausing"
-  emoji: "⚖️"
-  category: "patterns"
   conditions: [{metric: doji, op: "==", value: true}]
-  logic: AND
+- name: "Engulfing Bullish"
+  conditions: [{metric: hammer, op: "==", value: true}, {metric: price_above_ma200, op: "==", value: true}]
+- name: "Morning Star Potential"
+  conditions: [{metric: rsi_14, op: "<", value: 30}, {metric: hammer, op: "==", value: true}]
+- name: "Gap Up Open"
+  conditions: [{metric: volume_ratio, op: ">", value: 1.2}]
+- name: "Bearish Engulfing"
+  conditions: [{metric: rsi_14, op: ">", value: 70}]
+
