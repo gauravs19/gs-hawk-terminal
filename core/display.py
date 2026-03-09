@@ -48,41 +48,35 @@ class DisplayEngine:
         pulse = "●" if int(datetime.now().second) % 2 == 0 else "○"
         
         header_table = Table.grid(expand=True)
-        header_table.add_column(justify="left", ratio=1)
-        header_table.add_column(justify="center", ratio=1)
-        header_table.add_column(justify="right", ratio=1)
+        header_table.add_column(justify="left")
+        header_table.add_column(justify="right")
         
         header_table.add_row(
             Text(f" GS HAWK TERM 1.1 ", style=f"bold black {DisplayEngine.BG_HEADER}"),
-            Text(f"{pulse} MONITORING NSE REAL-TIME {pulse}", style=f"bold {DisplayEngine.TEXT_HL}"),
-            Text(f" {now} ", style=f"bold white {DisplayEngine.BG_HEADER}")
+            Text(f"{pulse} REAL-TIME {pulse} | {now} ", style=f"bold {DisplayEngine.TEXT_HL}")
         )
         return header_table
 
     @staticmethod
     def get_market_intelligence(macro: dict, sectors: dict):
-        # Professional Double Border Box for Market Intelligence
-        intel = Table.grid(expand=True)
-        intel.add_column(ratio=2); intel.add_column(ratio=3)
-
-        # Macro (Left side)
         mood_color = "green" if macro.get('score', 0) > 5 else "red" if macro.get('score', 0) < 3 else "white"
         mood_str = f"MOOD: [bold {mood_color}]{macro.get('mood', 'N/A')}[/] ({macro.get('score', 0)}/8)"
         
         factors = []
-        for name, data in list(macro.get('factors', {}).items())[:4]:
+        for name, data in list(macro.get('factors', {}).items()):
             c = DisplayEngine.PRICE_UP if data.get('change', 0) > 0 else DisplayEngine.PRICE_RED
             short = name.split()[0].replace("Nikkei", "NKY").replace("Hang", "HSI")
             factors.append(f"{short}[{c}]{data.get('change', 0):+.1f}%[/]")
         
-        macro_line = Text.assemble((mood_str, "default"), ("  ", ""), (" | ".join(factors), "dim"))
-
-        # Sector Performance (Right side)
+        macro_line = Text.assemble((mood_str, "default"), (" | ", "dim"), (" ".join(factors), "default"))
+        
         leaders = " ".join([f"{n}[{DisplayEngine.PRICE_UP}]+{d['change_1d']:.1f}%[/]" for n, d in sectors.get('leaders', [])])
-        sector_line = Text.assemble(("PULSE: ", "dim"), (leaders, "default"), justify="right")
+        sector_line = Text.assemble(("PULSE: ", "dim"), (leaders, "default"))
 
-        intel.add_row(macro_line, sector_line)
-        return Panel(intel, border_style=DisplayEngine.TEXT_HL, padding=(0, 1), box=DOUBLE)
+        intel_grid = Table.grid(expand=True)
+        intel_grid.add_row(Panel(macro_line, border_style=DisplayEngine.TEXT_HL, box=ROUNDED, padding=(0, 1)))
+        intel_grid.add_row(Panel(sector_line, border_style=DisplayEngine.TEXT_DIM, box=ROUNDED, padding=(0,1)))
+        return intel_grid
 
     @staticmethod
     def get_screener_grid(screener_hits: dict):
@@ -93,11 +87,11 @@ class DisplayEngine:
         # Sort by most hits
         sorted_hits = sorted(screener_hits.items(), key=lambda x: len(x[1]), reverse=True)
         
-        for name, stocks in sorted_hits[:6]: # Limit to top 6 screeners to save vertical space
+        for name, stocks in sorted_hits: # No limit on screeners
             if not stocks: continue
             
             stock_rows = []
-            for s in stocks[:4]:
+            for s in stocks: # No limit on stocks per screener
                 color = DisplayEngine.PRICE_UP if s['score'] >= 5 else "white"
                 spark = DisplayEngine.get_sparkline(s.get('history', []), width=6)
                 stock_rows.append(f"[{color}]{s['symbol']:<10}[/] {spark}")
@@ -178,16 +172,16 @@ class DisplayEngine:
 
         # KPI Header
         kpi_table = Table.grid(expand=True)
-        kpi_table.add_column(ratio=1); kpi_table.add_column(ratio=1); kpi_table.add_column(ratio=1); kpi_table.add_column(ratio=1)
+        kpi_table.add_column(); kpi_table.add_column(); kpi_table.add_column(); kpi_table.add_column()
         
         roi_color = DisplayEngine.PRICE_UP if stats['roi'] > 0 else DisplayEngine.PRICE_RED
         wr_color = "yellow" if stats['win_rate'] > 50 else "white"
         
         kpi_table.add_row(
-            Panel(Text.assemble(("TOTAL TRADES\n", "dim"), (f"{stats['total_trades']}", "bold")), border_style=DisplayEngine.TEXT_HL),
-            Panel(Text.assemble(("WIN RATE\n", "dim"), (f"{stats['win_rate']:.1f}%", f"bold {wr_color}")), border_style=DisplayEngine.TEXT_HL),
-            Panel(Text.assemble(("TOTAL P&L\n", "dim"), (f"₹{stats['pnl']:,.2f}", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL),
-            Panel(Text.assemble(("ROI\n", "dim"), (f"{stats['roi']:+.2f}%", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL)
+            Panel(Text.assemble(("TOTAL TRADES\n", "dim"), (f"{stats['total_trades']}", "bold")), border_style=DisplayEngine.TEXT_HL, expand=True),
+            Panel(Text.assemble(("WIN RATE\n", "dim"), (f"{stats['win_rate']:.1f}%", f"bold {wr_color}")), border_style=DisplayEngine.TEXT_HL, expand=True),
+            Panel(Text.assemble(("TOTAL P&L\n", "dim"), (f"₹{stats['pnl']:,.2f}", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL, expand=True),
+            Panel(Text.assemble(("ROI\n", "dim"), (f"{stats['roi']:+.2f}%", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL, expand=True)
         )
 
         # Trade List
@@ -199,7 +193,7 @@ class DisplayEngine:
         trade_table.add_column("P&L %", justify="right", ratio=1)
         trade_table.add_column("RESULT", justify="center", ratio=1)
 
-        for t in stats.get('trades_list', [])[-10:]: # Show last 10 trades
+        for t in stats.get('trades_list', []): # Show all trades
             color = DisplayEngine.PRICE_UP if t['pnl'] > 0 else DisplayEngine.PRICE_RED
             res_label = "[bold green]TP[/]" if t['result'] == 'TP' else "[bold red]SL[/]"
             trade_table.add_row(

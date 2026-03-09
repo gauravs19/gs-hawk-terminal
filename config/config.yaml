@@ -6,7 +6,7 @@ telegram:
   chat_id: "YOUR_CHAT_ID"
 
 alerts:
-  desktop_notifications: true
+  desktop_notifications: false
   sound: true
   sound_file: ""                  # empty = system beep
   delta_only: true                # only alert new screener entries
