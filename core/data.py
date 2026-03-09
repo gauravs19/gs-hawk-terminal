@@ -66,36 +66,59 @@ class DataLayer:
 
     def fetch_historical(self, symbols: list):
         console.print(f"Fetching 1y historical data for {len(symbols)} symbols...")
-        # using yfinance bulk fetch
-        if not symbols:
-            return
+        if not symbols: return
         
         data = yf.download(symbols, period="1y", group_by='ticker', threads=True)
         
-        if len(symbols) == 1:
-            sym = symbols[0]
-            df = data.copy()
-            df.reset_index(inplace=True)
-            df['symbol'] = sym
-            self._save_df(df)
-        else:
-            for sym in symbols:
-                try:
+        for sym in symbols:
+            try:
+                # If single symbol, yf might not have ticker level if group_by='ticker' is ignored or behaves differently
+                if len(symbols) == 1 and sym not in data.columns.levels[0] if isinstance(data.columns, pd.MultiIndex) else True:
+                    df = data.copy()
+                else:
                     df = data[sym].copy()
-                    df.reset_index(inplace=True)
-                    df['symbol'] = sym
-                    self._save_df(df)
-                except KeyError:
-                    pass
+                
+                df.reset_index(inplace=True)
+                df['symbol'] = sym # Ensure it's a flat column
+                self._save_df(df)
+            except Exception as e:
+                console.print(f"[dim]Note: Could not process {sym}: {e}[/dim]")
 
     def _save_df(self, df: pd.DataFrame):
-        df = df.rename(columns={
-            "Date": "date", "Open": "open", "High": "high", 
-            "Low": "low", "Close": "close", "Volume": "volume"
-        })
-        if 'date' in df.columns:
+        # 1. Flatten if MultiIndex
+        if isinstance(df.columns, pd.MultiIndex):
+            new_cols = []
+            for col in df.columns:
+                if isinstance(col, tuple):
+                    # Take the first non-empty part that looks like a technical column
+                    val = next((c.lower() for c in col if c.lower() in ['open', 'high', 'low', 'close', 'volume', 'adj close', 'date', 'symbol']), col[-1].lower())
+                    new_cols.append(val)
+                else:
+                    new_cols.append(col.lower())
+            df.columns = new_cols
+        else:
+            df.columns = [str(c).lower() for c in df.columns]
+        
+        # 2. Rename
+        rename_map = {"adj close": "close"}
+        df = df.rename(columns=rename_map)
+        
+        # 3. Handle Date
+        if 'date' not in df.columns:
+            df = df.reset_index()
+            df.columns = [str(c).lower() for c in df.columns]
+
+        if 'date' in df.columns and hasattr(df['date'], 'dt'):
             df['date'] = df['date'].dt.strftime('%Y-%m-%d')
-        df = df[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume']]
+            
+        # 4. Final selection
+        needed = ['symbol', 'date', 'open', 'high', 'low', 'close', 'volume']
+        available = [c for c in needed if c in df.columns]
+        df = df[available]
+        
+        # Ensure 'symbol' exists
+        if 'symbol' not in df.columns: return
+        
         df.dropna(subset=['close'], inplace=True)
         
         df.to_sql('stock_data_temp', self.conn, if_exists='replace', index=False)

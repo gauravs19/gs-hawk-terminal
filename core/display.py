@@ -172,6 +172,52 @@ class DisplayEngine:
         return table
 
     @staticmethod
+    def get_backtest_report(stats: dict):
+        if not stats or stats.get('total_trades', 0) == 0:
+            return Panel(Text("NO TRADES EXECUTED IN BACKTEST PERIOD", style="bold red"), border_style="red")
+
+        # KPI Header
+        kpi_table = Table.grid(expand=True)
+        kpi_table.add_column(ratio=1); kpi_table.add_column(ratio=1); kpi_table.add_column(ratio=1); kpi_table.add_column(ratio=1)
+        
+        roi_color = DisplayEngine.PRICE_UP if stats['roi'] > 0 else DisplayEngine.PRICE_RED
+        wr_color = "yellow" if stats['win_rate'] > 50 else "white"
+        
+        kpi_table.add_row(
+            Panel(Text.assemble(("TOTAL TRADES\n", "dim"), (f"{stats['total_trades']}", "bold")), border_style=DisplayEngine.TEXT_HL),
+            Panel(Text.assemble(("WIN RATE\n", "dim"), (f"{stats['win_rate']:.1f}%", f"bold {wr_color}")), border_style=DisplayEngine.TEXT_HL),
+            Panel(Text.assemble(("TOTAL P&L\n", "dim"), (f"₹{stats['pnl']:,.2f}", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL),
+            Panel(Text.assemble(("ROI\n", "dim"), (f"{stats['roi']:+.2f}%", f"bold {roi_color}")), border_style=DisplayEngine.TEXT_HL)
+        )
+
+        # Trade List
+        trade_table = Table(show_header=True, header_style=f"bold {DisplayEngine.TEXT_HL}", box=None, expand=True)
+        trade_table.add_column("DATE", ratio=1)
+        trade_table.add_column("SYMBOL", ratio=1)
+        trade_table.add_column("ENTRY", justify="right", ratio=1)
+        trade_table.add_column("EXIT", justify="right", ratio=1)
+        trade_table.add_column("P&L %", justify="right", ratio=1)
+        trade_table.add_column("RESULT", justify="center", ratio=1)
+
+        for t in stats.get('trades_list', [])[-10:]: # Show last 10 trades
+            color = DisplayEngine.PRICE_UP if t['pnl'] > 0 else DisplayEngine.PRICE_RED
+            res_label = "[bold green]TP[/]" if t['result'] == 'TP' else "[bold red]SL[/]"
+            trade_table.add_row(
+                t['entry_date'].strftime("%Y-%m-%d"),
+                t['symbol'],
+                f"{t['entry_price']:.2f}",
+                f"{t['exit_price']:.2f}",
+                f"[{color}]{t['return_pct']:+.2f}%[/]",
+                res_label
+            )
+
+        return Group(
+            Rule(style=DisplayEngine.TEXT_HL, title=" BACKTEST PERFORMANCE REPORT "),
+            kpi_table,
+            Panel(trade_table, title=" RECENT EXECUTIONS ", border_style="dim")
+        )
+
+    @staticmethod
     def get_footer(scan_info: dict):
         footer = Table.grid(expand=True)
         footer.add_column(ratio=1); footer.add_column(ratio=1)
@@ -187,13 +233,19 @@ class DisplayEngine:
         return Group(Rule(style=DisplayEngine.TEXT_HL), footer)
 
     @classmethod
-    def make_renderable(cls, macro_summary=None, sector_summary=None, screener_hits=None, results=None, scan_info=None):
+    def make_renderable(cls, macro_summary=None, sector_summary=None, screener_hits=None, results=None, scan_info=None, backtest_stats=None):
         """Final Layout assembly for the Bloomberg TUI."""
-        return Group(
+        components = [
             cls.get_header(),
-            cls.get_market_intelligence(macro_summary or {}, sector_summary or {}),
-            cls.get_screener_grid(screener_hits or {}),
-            Rule(style="dim", title=" TRADE STRATEGIES & SIGNALS "),
-            cls.get_strategy_table(results or []),
-            cls.get_footer(scan_info or {})
-        )
+            cls.get_market_intelligence(macro_summary or {}, sector_summary or {})
+        ]
+        
+        if backtest_stats:
+            components.append(cls.get_backtest_report(backtest_stats))
+        else:
+            components.append(cls.get_screener_grid(screener_hits or {}))
+            components.append(Rule(style="dim", title=" TRADE STRATEGIES & SIGNALS "))
+            components.append(cls.get_strategy_table(results or []))
+            
+        components.append(cls.get_footer(scan_info or {}))
+        return Group(*components)

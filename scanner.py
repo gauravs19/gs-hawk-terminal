@@ -13,6 +13,7 @@ from core.macro import MacroEngine
 from core.sectors import SectorEngine
 from core.display import DisplayEngine
 from core.alerts import AlertDispatcher
+from core.backtest import BacktestEngine
 
 console = Console()
 
@@ -106,12 +107,41 @@ def main():
     parser.add_argument("--stocks", help="Comma separated symbols")
     parser.add_argument("--screen", help="Filter by specific screener name")
     parser.add_argument("--watch", action="store_true", help="Continuous monitoring mode")
+    parser.add_argument("--backtest", action="store_true", help="Run historical backtest")
     parser.add_argument("--interval", type=int, default=5, help="Scan interval in minutes")
     args = parser.parse_args()
 
     config = load_config()
     
     with Live(DisplayEngine.make_renderable(scan_info={"task": "STARTING", "live": args.watch}), screen=False, refresh_per_second=2) as live:
+        if args.backtest:
+            be = BacktestEngine()
+            dl = DataLayer(config["cache"]["db_path"])
+            me = MacroEngine()
+            sce = SectorEngine()
+            
+            macro = me.get_summary()
+            sectors = sce.get_summary()
+            
+            # Backtest only works on explicit stocks or tier1
+            stocks = args.stocks.split(",") if args.stocks else load_config()["universe"]["tier1"][:5]
+            
+            all_trades = []
+            for sym in stocks:
+                live.update(DisplayEngine.make_renderable(macro, sectors, scan_info={"task": f"FETCHING {sym}"}))
+                dl.fetch_historical([sym]) # Ensure 1y data is in cache
+                
+                live.update(DisplayEngine.make_renderable(macro, sectors, scan_info={"task": f"BACKTESTING {sym}"}))
+                df = dl.get_stock_data(sym) 
+                stats = be.run(sym, df)
+                if stats and stats['trades_list']:
+                    all_trades.extend(stats['trades_list'])
+            
+            # Aggregate stats
+            final_stats = be.calculate_stats(all_trades, 100000)
+            live.update(DisplayEngine.make_renderable(macro, sectors, scan_info={"task": "BACKTEST COMPLETE"}, backtest_stats=final_stats))
+            return
+
         while True:
             macro, sectors, hits, results = scan_cycle(config, args, live)
             if not args.watch:
