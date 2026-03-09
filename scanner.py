@@ -95,6 +95,7 @@ def scan_cycle(config, args, live):
             "plans": plans, 
             "final_score": f_score
         })
+        metrics['final_score'] = f_score 
         ad.dispatch(sym, matches[0], metrics, plans[0])
 
     scan_info["task"] = "IDLE (WAITING)"
