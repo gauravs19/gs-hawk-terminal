@@ -1,20 +1,16 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "gs-hawk-terminal"
 version = "1.1.0"
-authors = [
-  { name="Gaurav Sharma", email="gaurav@example.com" },
-]
 description = "Professional Bloomberg-style Market Intelligence Terminal for NSE/BSE"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
@@ -24,10 +20,18 @@ dependencies = [
     "rich>=13.0.0",
     "pyyaml>=6.0",
     "requests>=2.31.0",
+    "pytz",
 ]
 
 [project.scripts]
 gs-hawk = "scanner:main"
+
+[tool.setuptools]
+packages = ["core"]
+py-modules = ["scanner"]
+
+[tool.setuptools.package-data]
+"*" = ["config/*.yaml"]
 
 [project.urls]
 "Homepage" = "https://github.com/gauravs19/gs-hawk-terminal"
