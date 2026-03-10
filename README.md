@@ -78,34 +78,48 @@ python scanner.py --backtest --stocks "RELIANCE.NS,SBIN.NS,TCS.NS"
 
 ---
 
-## 📂 System Architecture
+## 📂 High-Level Design (HLD)
 
-GS Hawk is built on a modular "Engine-based" architecture for maximum extensibility. Here is how data flows through the system:
+GS Hawk Terminal follows a modular, engine-driven architecture designed for low latency and high data throughput. The system is decoupled into three primary layers: **Ingestion**, **Analysis**, and **Presentation**.
+
+### 🔄 Data Orchestration Flow
+
+The following sequence diagram illustrates the lifecycle of a single scan cycle, from raw data ingestion to the final TUI rendering:
 
 ```mermaid
-graph TD
-    subgraph "Market Intelligence"
-        B[Macro Engine] -->|Global Indices| E[Market Context]
-        C[Sector Engine] -->|Relative Strength| E
-    end
+sequenceDiagram
+    participant U as User/Timer
+    participant L as Scanner Loop
+    participant D as Data Layer (yFinance)
+    participant S as Signal Engine
+    participant Sc as Scoring Engine
+    participant St as Strategy Engine
+    participant UI as Display Engine (TUI)
 
-    subgraph "Analysis Pipeline"
-        D[Data Layer] -->|yFinance/SQLite| F[Signal Engine]
-        F -->|Technical Metrics| G[Screener Engine]
-        G -->|Matched Patterns| H[Scoring Engine]
-        E -->|Multipliers| H
-    end
-
-    subgraph "Execution & TUI"
-        H -->|Conviction Score| I[Strategy Engine]
-        I -->|Correlated Setups| J[Display Engine]
-        J -->|Rich TUI| K[Terminal View]
-    end
-
-    A[Scanner Loop] --> B
-    A --> C
-    A --> D
+    U->>L: Trigger Scan Cycle
+    L->>D: Fetch Historical OHLCV
+    D-->>L: Return DataFrames
+    L->>S: Calculate Technical Indicators
+    S-->>L: Return Signal Metrics
+    L->>Sc: Evaluate Screeners & Scoring
+    Sc-->>L: Final Conviction Scores
+    L->>St: Correlate Multi-Factor Strategies
+    St-->>L: Strategic Trade Plans
+    L->>UI: Render Bloomberg-style TUI
+    UI-->>U: Display Actionable Intelligence
 ```
+
+### 🏗️ Architectural Components
+
+*   **Market Intelligence Unit (`core/macro.py`, `core/sectors.py`)**: Continuously monitors global proxies (S&P 500, Brent Crude) and identifies sector rotation to provide "Tailwind Multipliers" to individual stock scores.
+*   **Core Analytical Pipeline (`core/signals.py`, `core/screeners.py`)**: A vectorized math engine that processes RSI, MACD, and Price Action patterns (Hammer, NR7) across 1000+ symbols.
+*   **Conviction Engine (`core/scoring.py`)**: Uses a proprietary weighting algorithm to convert raw signals into a 0-10 conviction scale.
+*   **Strategy & Decision Engine (`core/strategies.py`)**: The final filter that checks for *Confluence*—ensuring a trade is only suggested if multiple indicators correlate.
+*   **Interface Layer (`core/display.py`)**: A high-performance rendering engine built on `Rich`, optimized for high information density and low eye strain.
+
+---
+
+## 📂 Project Structure
 
 *   `core/signals.py`: Technical indicator and candlestick pattern math.
 *   `core/macro.py`: Global factor analysis and sentiment scoring.
