@@ -84,30 +84,7 @@ GS Hawk Terminal follows a modular, engine-driven architecture designed for low 
 
 ### 🔄 Data Orchestration Flow
 
-The following sequence diagram illustrates the lifecycle of a single scan cycle, from raw data ingestion to the final TUI rendering:
-
-```mermaid
-sequenceDiagram
-    participant U as User/Timer
-    participant L as Scanner Loop
-    participant D as Data Layer (yFinance)
-    participant S as Signal Engine
-    participant Sc as Scoring Engine
-    participant St as Strategy Engine
-    participant UI as Display Engine (TUI)
-
-    U->>L: Trigger Scan Cycle
-    L->>D: Fetch Historical OHLCV
-    D-->>L: Return DataFrames
-    L->>S: Calculate Technical Indicators
-    S-->>L: Return Signal Metrics
-    L->>Sc: Evaluate Screeners & Scoring
-    Sc-->>L: Final Conviction Scores
-    L->>St: Correlate Multi-Factor Strategies
-    St-->>L: Strategic Trade Plans
-    L->>UI: Render Bloomberg-style TUI
-    UI-->>U: Display Actionable Intelligence
-```
+GS Hawk Terminal utilizes a synchronized scan cycle that orchestrates data flow from yFinance ingestors, through vectorized technical signal processing, into a proprietary conviction-weighting engine, finally outputting high-density strategic setups to the Rich-based TUI.
 
 ### 🧩 Logical Module View
 
