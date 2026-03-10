@@ -79,10 +79,36 @@ python scanner.py --backtest --stocks "RELIANCE.NS,SBIN.NS,TCS.NS"
 
 ## 📂 System Architecture
 
-GS Hawk is built on a modular "Engine-based" architecture for maximum extensibility:
+GS Hawk is built on a modular "Engine-based" architecture for maximum extensibility. Here is how data flows through the system:
+
+```mermaid
+graph TD
+    subgraph "Market Intelligence"
+        B[Macro Engine] -->|Global Indices| E[Market Context]
+        C[Sector Engine] -->|Relative Strength| E
+    end
+
+    subgraph "Analysis Pipeline"
+        D[Data Layer] -->|yFinance/SQLite| F[Signal Engine]
+        F -->|Technical Metrics| G[Screener Engine]
+        G -->|Matched Patterns| H[Scoring Engine]
+        E -->|Multipliers| H
+    end
+
+    subgraph "Execution & TUI"
+        H -->|Conviction Score| I[Strategy Engine]
+        I -->|Correlated Setups| J[Display Engine]
+        J -->|Rich TUI| K[Terminal View]
+    end
+
+    A[Scanner Loop] --> B
+    A --> C
+    A --> D
+```
 
 *   `core/signals.py`: Technical indicator and candlestick pattern math.
 *   `core/macro.py`: Global factor analysis and sentiment scoring.
+*   `core/sectors.py`: Sector-wise membership and relative strength tracking.
 *   `core/display.py`: TUI rendering engine (Rich-based Bloomberg aesthetic).
 *   `core/strategies.py`: Confluence and correlation logic for setup validation.
 *   `config/universe.yaml`: Hierarchical stock universe (Tier 1-5).
