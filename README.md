@@ -7,11 +7,12 @@
 
 GS Hawk Terminal is a high-performance, Bloomberg-inspired Terminal User Interface (TUI) for Indian Equity markets (NSE/BSE). Designed for professional traders and developers, it transforms raw market data into high-conviction, actionable intelligence through a sophisticated multi-factor correlation engine.
 
-![GS Hawk Terminal UI](https://raw.githubusercontent.com/gauravs19/gs-hawk-terminal/main/docs/ui_preview.png)
+<img width="1885" height="949" alt="image" src="https://github.com/user-attachments/assets/70c46df4-d68f-4c8a-8404-54db0d583580" />
+<img width="1901" height="923" alt="image" src="https://github.com/user-attachments/assets/ffa64c30-5e72-4de9-adab-c910c9c03e4c" />
 
 ---
 
-## 💎 Why GS Hawk?
+## � Why GS Hawk?
 
 In a world of cluttered web interfaces, GS Hawk provides a **Zero-Distraction, Data-First Environment**. It doesn't just scan for patterns; it correlates global macro sentiment, sector strength, and technical confluence to provide a singular **Conviction Score** for every setup.
 
