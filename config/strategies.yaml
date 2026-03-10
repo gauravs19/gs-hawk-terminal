@@ -1,67 +1,67 @@
 # GS Hawk Terminal Strategies Configuration
+# Combination strategies correlate multiple screeners for higher conviction.
 
-- name: RSI Mean Reversion
-  description: Oversold stocks tend to revert to mean
+- name: POWER PUMP (Combo)
+  description: "Perfect storm: Extreme Oversold + High Volume + Reversal Candle. Massive bounce potential."
+  logic: ALL
   triggers:
-    - RSI Oversold <30
-    - RSI Extreme Oversold <20
-  entry: "next_day_high_breakout"       # entry above today's high
-  stop_loss: "atr_multiplier: 1.5"      # below entry - (1.5 × ATR)
-  target_1: "rr_ratio: 1.0"             # 1:1
-  target_2: "rr_ratio: 2.0"             # 2:1
-  validity_sessions: 3
-  min_rr: 1.5
-  best_market: sideways_to_mild_trend
+    - "RSI Extreme Oversold <20"
+    - "Volume Spike"
+    - "Bullish Hammer"
+  entry: "High of Hammer"
+  stop_loss: "Low of Day"
+  target_1: "EMA 20"
+  min_rr: 3.0
 
-- name: Trend Following Breakout
-  description: Strong trends continue after consolidation breaks
+- name: INSTITUTIONAL BREAKOUT (Combo)
+  description: "Volume + 52W High + Supertrend. Big money is driving this higher."
+  logic: ALL
   triggers:
-    - NR7
-    - BB Squeeze
-    - Inside Bar
-  entry: "breakout_above_last_3d_high"
-  stop_loss: "below_nr7_low"
-  target_1: "previous_swing_high"
-  target_2: "atr_multiplier: 2.0"
-  validity_sessions: 5
-  min_rr: 1.5
-  best_market: trending
-
-- name: Golden Cross Momentum
-  description: MA crossover signals trend change — ride the new trend
-  triggers:
-    - Golden Cross MA25/50
-    - Golden Cross MA50/200
-  entry: "close_of_crossover_day"
-  stop_loss: "below_ma50"
-  target_1: "trailing_ma25"            # trail stop using MA25
-  target_2: "rr_ratio: 3.0"
-  validity_sessions: 15
+    - "Near 52W High"
+    - "Big Deal 3x+"
+    - "Supertrend Bullish"
+  entry: "Breakout Level"
+  stop_loss: "prev_day_low"
+  target_1: "5% Target"
   min_rr: 2.0
-  best_market: trending
 
-- name: Volume Surge Breakout
-  description: Institutional buying leaves a volume footprint
+- name: VOLATILITY EXPLOSION (Combo)
+  description: "BB Squeeze + Inside Bar + Volume Surge. Ready to blast in either direction (favoring trend)."
+  logic: ALL
   triggers:
-    - Big Deal 3x+
-    - Massive Volume 5x+
-    - Price Up + Volume Up
-  entry: "close_of_surge_candle"
-  stop_loss: "low_of_surge_candle"
-  target_1: "surge_candle_range_x1.5"
-  target_2: "surge_candle_range_x2.5"
-  validity_sessions: 5
-  min_rr: 1.5
-  best_market: any
+    - "BB Squeeze"
+    - "Inside Bar"
+    - "Volume Spike"
+  entry: "Inside Bar High"
+  stop_loss: "Inside Bar Low"
+  target_1: "ATR x 2"
+  min_rr: 2.5
 
-- name: Sector Aligned Momentum
-  description: Stocks perform better when sector is also moving
+- name: TREND CONTINUATION (Combo)
+  description: "Price Above MA200 + RSI Divergence + Volume Climax. Professional trend-riding."
+  logic: ALL
   triggers:
-    - Any bullish signal
-    - sector_in_top3_today: true
-  entry: "standard_per_primary_signal"
-  stop_loss: "standard_per_primary_signal"
-  score_boost: 1.5
-  validity_sessions: 5
-  min_rr: 1.5
-  best_market: sector_rotation
+    - "Price Above MA200"
+    - "RSI Divergence Setup"
+    - "Momentum Breakout"
+  entry: "Current Close"
+  stop_loss: "EMA 50"
+  target_1: "10% Target"
+  min_rr: 2.5
+
+# Legacy/Single-Trigger Strategies
+- name: RSI Mean Reversion
+  logic: ANY
+  triggers:
+    - "RSI Oversold <30"
+    - "RSI Extreme Oversold <20"
+- name: Trend Following
+  logic: ANY
+  triggers:
+    - "Price Cross Above MA50"
+    - "Supertrend Bullish"
+- name: Institutional Activity
+  logic: ANY
+  triggers:
+    - "Big Deal 3x+"
+    - "Massive Volume 5x+"

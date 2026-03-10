@@ -89,22 +89,29 @@ class DisplayEngine:
 
     @staticmethod
     def get_screener_grid(screener_hits: dict):
+        """Shows matched screeners with their technical explanations and symbol lists."""
         if not screener_hits: return Text("SCANNING UNIVERSE...", style=DisplayEngine.TEXT_DIM)
         
         grid = Table(show_header=True, header_style=f"bold {DisplayEngine.TEXT_HL}", box=SQUARE, border_style="grey23", expand=True)
-        grid.add_column("STRATEGIC SCREENER (ALL 50+)", style=f"bold {DisplayEngine.SCORE_COL}", width=35)
-        grid.add_column("MATCHING SYMBOLS (FULL MARKET UNIVERSE)", style="white")
+        grid.add_column("STRATEGIC SCREENER", style=f"bold {DisplayEngine.SCORE_COL}", width=25)
+        grid.add_column("TECHNICAL EXPLANATION", style="grey50", width=45)
+        grid.add_column("MATCHING SYMBOLS", style="white")
         
-        sorted_hits = sorted(screener_hits.items(), key=lambda x: len(x[1]), reverse=True)
-        for name, stocks in sorted_hits:
-            if not stocks: continue
-            stock_list = ", ".join([s['symbol'].replace(".NS","") for s in stocks])
-            grid.add_row(name.upper(), stock_list)
+        # Sort by number of hits
+        sorted_hits = sorted(screener_hits.items(), key=lambda x: len(x[1]["hits"]), reverse=True)
+        for name, data in sorted_hits:
+            hits = data.get("hits", [])
+            if not hits: continue
+            
+            stock_list = ", ".join([s['symbol'].replace(".NS","") for s in hits])
+            reason = data.get("reason", "Technical pattern detected.")
+            grid.add_row(name.upper(), reason, stock_list)
             
         return Panel(grid, title=" LIVE PATTERN DETECTION ", border_style="grey30", box=SQUARE)
 
     @staticmethod
-    def get_strategy_table(results: list, filter_conviction=None):
+    def get_action_list(results: list):
+        """Standard Conviction Action List grouping by Strategy (Combo names)"""
         if not results: return Table.grid()
         
         # Categorize results by conviction
@@ -117,8 +124,8 @@ class DisplayEngine:
         table.add_column("TREND", justify="center", width=12)
         table.add_column("SCORE", justify="right", style=f"{DisplayEngine.SCORE_COL}", width=6)
         table.add_column("CONVICTION", justify="left", width=15)
-        table.add_column("ALGO REASONING", style="grey62", width=50) # Increased width
-        table.add_column("TRADE SETUP (E/SL/T)", justify="left", style=f"{DisplayEngine.SETUP_COL}", min_width=30)
+        table.add_column("QUALIFIED STRATEGIES (COMBO)", style=f"bold {DisplayEngine.SETUP_COL}", width=40)
+        table.add_column("TRADE SETUP (E/SL/T)", justify="left", style=f"{DisplayEngine.TEXT_DIM}", min_width=30)
         table.add_column("R:R", justify="right", width=5)
 
         conviction_groups = [
@@ -140,14 +147,18 @@ class DisplayEngine:
                 badge = f" [bold {DisplayEngine.PRICE_UP}]STRONG[/]" if score >= 8 else f" [{DisplayEngine.PRICE_UP}]BUY[/]" if score >= 5 else ""
                 conviction = f"[{s_color}]{'■' * bar_val}[/][{DisplayEngine.TEXT_DIM}]{'□' * (10-bar_val)}[/]{badge}"
                 
-                # REASONING: Show the primary technical reason from the first match
-                primary_match = r['matches'][0] if r['matches'] else {}
-                reason = primary_match.get('reason', "Pattern confluence detected.")
+                # Show Strategy combos (Multiple strategies joined by +)
+                strat_names = [p['strategy'] for p in r.get('plans', []) if "Basic" not in p['strategy']]
+                if not strat_names:
+                    strat_names = ["Momentum Flow"]
+                
+                is_combo = len(strat_names) > 1 or any("Combo" in s for s in strat_names)
+                prefix = "[bold yellow]COMBO:[/] " if is_combo else ""
+                strat_display = prefix + " + ".join(strat_names)
                 
                 plan = r['plans'][0] if r['plans'] else {}
                 setup = f"E:{plan.get('entry', 0):.0f} / SL:{plan.get('stop_loss', 0):.0f} / T:{plan.get('target_1', 0):.0f}"
-                
-                table.add_row(r['symbol'], spark, f"{score:+.1f}", conviction, reason, setup, f"{plan.get('rr', 0):.1f}")
+                table.add_row(r['symbol'], spark, f"{score:+.1f}", conviction, strat_display, setup, f"{plan.get('rr', 0):.1f}")
         
         return table
 
@@ -193,8 +204,11 @@ class DisplayEngine:
         if backtest_stats:
             comps.append(cls.get_backtest_report(backtest_stats))
         else:
+            # 1. Screeners Table with Explanation
             comps.append(cls.get_screener_grid(screener_hits or {}))
-            comps.append(Rule(style="grey30", title=" DYNAMIC CONVICTION ACTION LIST "))
-            comps.append(cls.get_strategy_table(results or []))
+            
+            # 2. Action List with Multi-Strategy Combos (No technical reason here)
+            comps.append(Rule(style="grey30", title=" CONVICTION ACTION LIST: MULTI-STRATEGY CONFLUENCE "))
+            comps.append(cls.get_action_list(results or []))
         comps.append(cls.get_footer(scan_info or {}))
         return Group(*comps)

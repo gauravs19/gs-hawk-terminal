@@ -4,6 +4,7 @@ class ScoringEngine:
         
     def calculate_base_score(self, matches: list, metrics: dict) -> float:
         score = 0
+        
         # Tier 1 (High Impact)
         if "RSI Extreme Oversold <20" in matches: score += 5
         if "Supertrend Bullish" in matches: score += 3
@@ -17,6 +18,12 @@ class ScoringEngine:
         # Tier 3 (Pattern)
         if "Inside Bar" in matches: score += 1
         if "NR7 Range" in matches: score += 1
+        
+        # --- CONFLUENCE BONUS ---
+        # If multiple indicators align, boost the conviction
+        if len(matches) > 2:
+            confluence_bonus = (len(matches) - 2) * 2.0
+            score += confluence_bonus
         
         # Trend Filter
         if metrics.get('price', 0) < metrics.get('ma200', 0): 

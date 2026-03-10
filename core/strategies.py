@@ -8,16 +8,20 @@ class StrategyEngine:
     def evaluate(self, symbol: str, price: float, matches: list) -> list:
         results = []
         for s in self.strategies:
-            applies = False
-            for t in s.get("triggers", []):
-                if t in matches:
-                    applies = True
-                    break
+            logic = s.get("logic", "ANY")
+            triggers = s.get("triggers", [])
+            
+            if logic == "ALL":
+                # Must match ALL listed triggers
+                applies = all(t in matches for t in triggers)
+            else:
+                # Default ANY logic
+                applies = any(t in matches for t in triggers)
             
             if applies:
-                # Basic mock logic for SL/Targets
-                sl = price * 0.95
-                t1 = price * 1.05
+                # Calculate SL/Target based on ATR or defaults
+                sl = price * 0.97 # Standard 3% SL for now
+                t1 = price * 1.06 # Higher 6% Target for combos
                 rr = (t1 - price) / (price - sl) if price > sl else 0
                 
                 results.append({

@@ -88,8 +88,9 @@ def scan_cycle(config, args):
             
             for m in matches:
                 name = m['name']
-                if name not in screener_hits: screener_hits[name] = []
-                screener_hits[name].append({"symbol": sym, "price": metrics['price'], "score": f_score, "history": metrics.get('history_20', [])})
+                if name not in screener_hits: 
+                    screener_hits[name] = {"reason": m.get('reason', ""), "hits": []}
+                screener_hits[name]["hits"].append({"symbol": sym, "price": metrics['price'], "score": f_score, "history": metrics.get('history_20', [])})
 
             results.append({
                 "symbol": sym, "sector": sce.get_stock_sector(sym),
@@ -99,6 +100,11 @@ def scan_cycle(config, args):
             ad.dispatch(sym, matches[0]['name'], metrics, plans[0])
 
     # --- SCAN COMPLETE ---
+    # Sort results by score and apply --top limit
+    results = sorted(results, key=lambda x: x['final_score'], reverse=True)
+    if args.top:
+        results = results[:args.top]
+
     # Print final output to console for infinite scroll history
     console.print(DisplayEngine.make_renderable(macro_summary, sector_summary, screener_hits, results, {"task": "SCAN COMPLETE", "live": args.watch}))
     return macro_summary, sector_summary, screener_hits, results
@@ -106,6 +112,7 @@ def scan_cycle(config, args):
 def main():
     parser = argparse.ArgumentParser(description="GS Hawk Terminal - Pattern Scanner")
     parser.add_argument("--stocks", help="Comma separated symbols")
+    parser.add_argument("--top", type=int, help="Limit results to top N stocks")
     parser.add_argument("--screen", help="Filter by specific screener name")
     parser.add_argument("--watch", action="store_true", help="Continuous monitoring mode")
     parser.add_argument("--backtest", action="store_true", help="Run historical backtest")
