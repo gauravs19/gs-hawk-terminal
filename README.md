@@ -185,7 +185,9 @@ Contributions are what make the open source community such an amazing place to l
 
 ## 📜 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the **MIT License**. See the [LICENSE](LICENSE) file for the full text and permissions.
+
+---
 
 ## 🦅 Disclaimer
 *GS Hawk Terminal is an analysis tool and does not provide financial advice. Trading involves significant risk. The developers are not responsible for any financial losses.*
