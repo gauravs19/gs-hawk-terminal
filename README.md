@@ -109,6 +109,58 @@ sequenceDiagram
     UI-->>U: Display Actionable Intelligence
 ```
 
+### 🧩 Logical Module View
+
+The following block diagram represents the functional grouping of modules and their logical dependencies:
+
+```mermaid
+graph TB
+    subgraph "External Data & Connectivity"
+        YF[yFinance API]
+        SQL[SQLite Cache]
+    end
+
+    subgraph "Ingestion Layer"
+        DL[Data Layer]
+        ME[Macro Engine]
+        SEc[Sector Engine]
+    end
+
+    subgraph "Analytical Intelligence"
+        SE[Signal Engine]
+        Scr[Screener Engine]
+        Sco[Scoring Engine]
+    end
+
+    subgraph "Execution & Alerting"
+        Ste[Strategy Engine]
+        AD[Alert Dispatcher]
+    end
+
+    subgraph "Presentation Layer"
+        DE[Display Engine]
+        Rich[Rich TUI Library]
+    end
+
+    YF --> DL
+    YF --> ME
+    YF --> SEc
+    SQL <--> DL
+    
+    DL --> SE
+    ME --> Sco
+    SEc --> Sco
+    
+    SE --> Scr
+    Scr --> Sco
+    
+    Sco --> Ste
+    Ste --> AD
+    Ste --> DE
+    
+    DE --> Rich
+```
+
 ### 🏗️ Architectural Components
 
 *   **Market Intelligence Unit (`core/macro.py`, `core/sectors.py`)**: Continuously monitors global proxies (S&P 500, Brent Crude) and identifies sector rotation to provide "Tailwind Multipliers" to individual stock scores.
